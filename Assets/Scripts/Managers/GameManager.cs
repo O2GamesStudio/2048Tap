@@ -18,8 +18,10 @@ public class GameManager : MonoBehaviour
 
     int[] numSet = new int[25];
     int[] RanNumVal = new int[] { 2, 2, 2, 2, 2, 4, 4, 8 };
-    public Button[] NumBtnSet;
+    //[SerializeField] Button[] NumBtnSet;
     bool[] isFilled = new bool[25];
+
+    [SerializeField] NumBtn[] numBtns;
 
 
     // 클릭 후 순회 로직
@@ -40,74 +42,33 @@ public class GameManager : MonoBehaviour
         InitGame();
         uiManager.highScoreTxt.text = PlayerPrefs.GetInt("HighScore").ToString();
     }
-    void Update()
-    {
-        // Todo : 버튼 클릭 후 처리하기
-        UpdateInfo();
-        UpdateTextColor();
-    }
     void InitGame()
     {
         for (int a = 0; a < 25; a++)
         {
-            NumBtnSet[a].GetComponentInChildren<TextMeshProUGUI>().text = "";
+            numBtns[a].SetNumText(0);
             visited[a] = false;
             isFilled[a] = false;
         }
 
         for (int a = 0; a < 4; a++)
         {
-            int val_a = Random.Range(0, 5);
-            int val_b = Random.Range(0, 5);
+            int ranIndex = Random.Range(0, 25);
             int val_nul = Random.Range(0, 8);
 
-            SetNum(val_a, val_b, RanNumVal[val_nul]);
+            SetNum(ranIndex, RanNumVal[val_nul]);
         }
         nextNum = 2;
         nowNum = 2;
 
-        // 버튼 바인딩 - 인덱스를 캡처하도록 수정
-        for (int i = 0; i < NumBtnSet.Length; i++)
+        for (int i = 0; i < numBtns.Length; i++)
         {
-            int index = i; // 클로저 문제 방지를 위한 로컬 변수
-            NumBtnSet[i].onClick.AddListener(() => BtnOnClicked(index));
+            int index = i;
+            //NumBtnSet[i].onClick.AddListener(() => BtnOnClicked(index));
+            numBtns[i].GetComponentInChildren<Button>().onClick.AddListener(() => BtnOnClicked(index));
         }
     }
-    void UpdateTextColor()
-    {
-        for (int a = 0; a < 25; a++)
-        {
-            if (NumBtnSet[a].GetComponentInChildren<TextMeshProUGUI>().text == "2")
-            {
-                NumBtnSet[a].GetComponentInChildren<TextMeshProUGUI>().color = Color.black;
-            }
-            else if (NumBtnSet[a].GetComponentInChildren<TextMeshProUGUI>().text == "4")
-            {
-                NumBtnSet[a].GetComponentInChildren<TextMeshProUGUI>().color =
-                    new Color(150 / 255f, 65 / 255f, 65 / 255f);
-            }
-            else if (NumBtnSet[a].GetComponentInChildren<TextMeshProUGUI>().text == "8")
-            {
-                NumBtnSet[a].GetComponentInChildren<TextMeshProUGUI>().color =
-                    new Color(25 / 255f, 60 / 255f, 150 / 255f);
-            }
-            else if (NumBtnSet[a].GetComponentInChildren<TextMeshProUGUI>().text == "16")
-            {
-                NumBtnSet[a].GetComponentInChildren<TextMeshProUGUI>().color =
-                    new Color(25 / 255f, 150 / 255f, 150 / 255f);
-            }
-            else if (NumBtnSet[a].GetComponentInChildren<TextMeshProUGUI>().text == "32")
-            {
-                NumBtnSet[a].GetComponentInChildren<TextMeshProUGUI>().color =
-                    new Color(60 / 255f, 70 / 255f, 10 / 255f);
-            }
-            else if (NumBtnSet[a].GetComponentInChildren<TextMeshProUGUI>().text == "64")
-            {
-                NumBtnSet[a].GetComponentInChildren<TextMeshProUGUI>().color =
-                    new Color(100 / 255f, 30 / 255f, 170 / 255f);
-            }
-        }
-    }
+
     void UpdateInfo()
     {
         uiManager.UpdateUI();
@@ -126,11 +87,10 @@ public class GameManager : MonoBehaviour
         if (filledCount >= 25) GameOver();
     }
 
-    void SetNum(int pos_x, int pos_y, int val)
+    void SetNum(int index, int val)
     {
-        int realPos = pos_x * 5 + pos_y;
-        numSet[realPos] = val;
-        NumBtnSet[realPos].GetComponentInChildren<TextMeshProUGUI>().text = val.ToString();
+        numSet[index] = val;
+        numBtns[index].SetNumText(val);
     }
     void SetNextNum()
     {
@@ -197,10 +157,9 @@ public class GameManager : MonoBehaviour
 
     public void BtnOnClicked(int index)
     {
-        if (NumBtnSet[index].GetComponentInChildren<TextMeshProUGUI>().text == null ||
-            NumBtnSet[index].GetComponentInChildren<TextMeshProUGUI>().text == "")
+        if (numBtns[index].ReturnNum() == 0)
         {
-            NumBtnSet[index].GetComponentInChildren<TextMeshProUGUI>().text = nowNum.ToString();
+            numBtns[index].SetNumText(nowNum);
 
             clickedPos = index;
             numSet[index] = nowNum;
@@ -217,54 +176,55 @@ public class GameManager : MonoBehaviour
         {
             Debug.Log("이미 채워진 칸입니다!");
         }
+
+
+        UpdateInfo();
+        numBtns[index].UpdateColor();
     }
 
 
-    void TestFind(int pos) // pos = 16
+    void TestFind(int pos)
     {
         visited[pos] = true;
         int sameCountTemp = 0;
-        int a = pos % 5; //a = 1
-        if (pos - 1 >= 0 && a != 0 && !visited[pos - 1] &&
-            NumBtnSet[pos - 1].GetComponentInChildren<TextMeshProUGUI>().text == nowNum.ToString())
+        int a = pos % 5;
+
+        if (pos - 1 >= 0 && a != 0 && !visited[pos - 1] && numBtns[pos - 1].ReturnNum() == nowNum)
         {
             sameCount++;
             sameCountTemp++;
             visited[pos - 1] = true;
             sameSpaceNum[sameCount] = pos - 1;
         }
-        if (pos + 1 < 25 && a != 4 && !visited[pos + 1] &&
-            NumBtnSet[pos + 1].GetComponentInChildren<TextMeshProUGUI>().text == nowNum.ToString())
+        if (pos + 1 < 25 && a != 4 && !visited[pos + 1] && numBtns[pos + 1].ReturnNum() == nowNum)
         {
             sameCount++;
             sameCountTemp++;
             visited[pos + 1] = true;
             sameSpaceNum[sameCount] = pos + 1;
         }
-        if (pos - 5 >= 0 && !visited[pos - 5] &&
-           NumBtnSet[pos - 5].GetComponentInChildren<TextMeshProUGUI>().text == nowNum.ToString())
+        if (pos - 5 >= 0 && !visited[pos - 5] && numBtns[pos - 5].ReturnNum() == nowNum)
         {
             sameCount++;
             sameCountTemp++;
             visited[pos - 5] = true;
             sameSpaceNum[sameCount] = pos - 5;
         }
-        if (pos + 5 < 25 && !visited[pos + 5] &&
-          NumBtnSet[pos + 5].GetComponentInChildren<TextMeshProUGUI>().text == nowNum.ToString())
+        if (pos + 5 < 25 && !visited[pos + 5] && numBtns[pos + 5].ReturnNum() == nowNum)
         {
             sameCount++;
             sameCountTemp++;
             visited[pos + 5] = true;
             sameSpaceNum[sameCount] = pos + 5;
         }
-        //이어진 같은수 찾기
+
         for (int turn = 1; turn <= sameCountTemp; turn++)
         {
             TestFind(sameSpaceNum[turn]);
         }
     }
 
-    void FindSameNum(int pos) //주변에 같은 숫자 3개가 있는지 확인 
+    void FindSameNum(int pos)
     {
         TestFind(pos);
         while (sameCount >= 2)
@@ -272,11 +232,11 @@ public class GameManager : MonoBehaviour
             for (int b = 0; b <= sameCount; b++)
             {
                 numSet[sameSpaceNum[b]] = 0;
-                NumBtnSet[sameSpaceNum[b]].GetComponentInChildren<TextMeshProUGUI>().text = "";
+                numBtns[sameSpaceNum[b]].SetNumText(0);
             }
             nowNum *= 2;
             numSet[clickedPos] = nowNum;
-            NumBtnSet[clickedPos].GetComponentInChildren<TextMeshProUGUI>().text = nowNum.ToString();
+            numBtns[clickedPos].SetNumText(nowNum);
 
             int tempClickedPos = clickedPos;
             ResetValue();
@@ -292,7 +252,6 @@ public class GameManager : MonoBehaviour
         }
         nowScore += nowNum;
 
-        //변수 초기화 해주기!!!
         ResetValue();
         clickedPos = 0;
     }
