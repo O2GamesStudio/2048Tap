@@ -64,9 +64,9 @@ public class GameManager : MonoBehaviour
         for (int i = 0; i < numBtns.Length; i++)
         {
             int index = i;
-            //NumBtnSet[i].onClick.AddListener(() => BtnOnClicked(index));
             numBtns[i].GetComponentInChildren<Button>().onClick.AddListener(() => BtnOnClicked(index));
         }
+        uiManager.UpdateUI();
     }
 
     void UpdateInfo()
@@ -164,8 +164,6 @@ public class GameManager : MonoBehaviour
             clickedPos = index;
             numSet[index] = nowNum;
             sameSpaceNum[0] = clickedPos;
-
-            Debug.Log("Clicked Position: " + clickedPos);
 
             FindSameNum(clickedPos);
 
