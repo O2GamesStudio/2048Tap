@@ -3,6 +3,7 @@ using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 using TMPro;
+using System.Collections.Generic;
 
 public class GameManager : MonoBehaviour
 {
@@ -23,6 +24,27 @@ public class GameManager : MonoBehaviour
 
     [SerializeField] NumBtn[] numBtns;
 
+    // 지우기/복원 기능 추가
+    [SerializeField] Button eraseBtn;
+    [SerializeField] Button restoreBtn;
+    private bool isEraseMode = false;
+    private Stack<GameState> actionHistory = new Stack<GameState>();
+
+    // 게임 상태 저장용 구조체
+    private struct GameState
+    {
+        public int[] numSetCopy;
+        public int nowScore;
+        public int highScore;
+
+        public GameState(int[] numSet, int score, int high)
+        {
+            numSetCopy = new int[25];
+            System.Array.Copy(numSet, numSetCopy, 25);
+            nowScore = score;
+            highScore = high;
+        }
+    }
 
     // 클릭 후 순회 로직
     bool[] visited = new bool[30];
@@ -39,8 +61,17 @@ public class GameManager : MonoBehaviour
     {
         uiManager = UIManager.Instance;
 
+        // 버튼 리스너 추가
+        if (eraseBtn != null)
+            eraseBtn.onClick.AddListener(ToggleEraseMode);
+
+        if (restoreBtn != null)
+            restoreBtn.onClick.AddListener(RestoreLastAction);
+
         InitGame();
         uiManager.highScoreTxt.text = PlayerPrefs.GetInt("HighScore").ToString();
+
+        UpdateRestoreButton();
     }
     void InitGame()
     {
@@ -155,10 +186,69 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    // 지우기 모드 토글
+    void ToggleEraseMode()
+    {
+        isEraseMode = !isEraseMode;
+
+        // 버튼 색상 변경으로 모드 표시
+        if (eraseBtn != null)
+        {
+            ColorBlock colors = eraseBtn.colors;
+            if (isEraseMode)
+            {
+                colors.normalColor = new Color(1f, 0.6f, 0.6f); // 빨간색 톤
+            }
+            else
+            {
+                colors.normalColor = Color.white;
+            }
+            eraseBtn.colors = colors;
+        }
+
+        Debug.Log("지우기 모드: " + (isEraseMode ? "활성화" : "비활성화"));
+    }
+
     public void BtnOnClicked(int index)
     {
+        // 지우기 모드일 때
+        if (isEraseMode)
+        {
+            if (numBtns[index].ReturnNum() != 0)
+            {
+                // 현재 상태 저장
+                SaveGameState();
+
+                // 숫자 지우기
+                numSet[index] = 0;
+                numBtns[index].SetNumText(0);
+
+                Debug.Log($"칸 {index} 지워짐");
+
+                // 지우기 모드 해제
+                isEraseMode = false;
+                if (eraseBtn != null)
+                {
+                    ColorBlock colors = eraseBtn.colors;
+                    colors.normalColor = Color.white;
+                    eraseBtn.colors = colors;
+                }
+
+                UpdateRestoreButton();
+            }
+            else
+            {
+                Debug.Log("빈 칸입니다!");
+            }
+            return;
+        }
+
+        // 일반 모드 (기존 로직)
         if (numBtns[index].ReturnNum() == 0)
         {
+            // 현재 상태 저장
+            SaveGameState();
+
             numBtns[index].SetNumText(nowNum);
 
             clickedPos = index;
@@ -169,6 +259,8 @@ public class GameManager : MonoBehaviour
 
             nowNum = nextNum;
             SetNextNum();
+
+            UpdateRestoreButton();
         }
         else
         {
@@ -180,6 +272,61 @@ public class GameManager : MonoBehaviour
         numBtns[index].UpdateColor();
     }
 
+    // 현재 게임 상태 저장
+    void SaveGameState()
+    {
+        GameState state = new GameState(numSet, nowScore, highScore);
+        actionHistory.Push(state);
+
+        // 히스토리가 너무 많이 쌓이지 않도록 제한 (선택사항)
+        if (actionHistory.Count > 20)
+        {
+            // Stack을 배열로 변환하여 최근 20개만 유지
+            var tempList = new List<GameState>(actionHistory);
+            actionHistory.Clear();
+            for (int i = 0; i < 20; i++)
+            {
+                actionHistory.Push(tempList[i]);
+            }
+        }
+    }
+
+    // 마지막 액션 복원
+    void RestoreLastAction()
+    {
+        if (actionHistory.Count == 0)
+        {
+            Debug.Log("복원할 액션이 없습니다!");
+            return;
+        }
+
+        GameState lastState = actionHistory.Pop();
+
+        // 게임 상태 복원
+        System.Array.Copy(lastState.numSetCopy, numSet, 25);
+        nowScore = lastState.nowScore;
+        highScore = lastState.highScore;
+
+        // UI 업데이트
+        for (int i = 0; i < 25; i++)
+        {
+            numBtns[i].SetNumText(numSet[i]);
+        }
+
+        UpdateInfo();
+        UpdateRestoreButton();
+
+        Debug.Log("이전 상태로 복원되었습니다!");
+    }
+
+    // 복원 버튼 활성화/비활성화
+    void UpdateRestoreButton()
+    {
+        if (restoreBtn != null)
+        {
+            restoreBtn.interactable = actionHistory.Count > 0;
+        }
+    }
 
     void TestFind(int pos)
     {
@@ -272,6 +419,4 @@ public class GameManager : MonoBehaviour
         }
         uiManager.finalScoreTxt.text = nowScore.ToString();
     }
-
-
 }

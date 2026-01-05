@@ -1,3 +1,4 @@
+using System.Collections;
 using DG.Tweening;
 using TMPro;
 using UnityEngine;
@@ -9,6 +10,7 @@ public class LobbyManager : MonoBehaviour
     [Header("Button UI")]
     [SerializeField] Button gameStartBtn;
     [SerializeField] Button preChapterBtn, nextChapterBtn;
+    [SerializeField] Button eraseBtn, restoreBtn;
 
     [Header("Image UI")]
     [SerializeField] Image[] chapterImages;
@@ -62,11 +64,27 @@ public class LobbyManager : MonoBehaviour
             }
         }
     }
+    IEnumerator BtnClickAnim(int dir)
+    {
+        if (dir == -1)
+        {
+            preChapterBtn.transform.DOScale(new Vector3(-0.8f, 0.8f, 0.8f), 0.1f);
+            yield return new WaitForSeconds(0.1f);
+            preChapterBtn.transform.DOScale(new Vector3(-1f, 1f, 1f), 0.1f);
+        }
+        else
+        {
+            nextChapterBtn.transform.DOScale(Vector3.one * 0.8f, 0.1f);
+            yield return new WaitForSeconds(0.1f);
+            nextChapterBtn.transform.DOScale(Vector3.one, 0.1f);
+        }
 
+    }
     void ChapterMoveOnClick(int dir)
     {
         if (isAnimating) return;
 
+        StartCoroutine(BtnClickAnim(dir));
         if (dir == -1) //이전 챕터로 이동
         {
             if (chapterNum == 0) return;
