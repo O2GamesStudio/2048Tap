@@ -9,8 +9,9 @@ public class UIManager : MonoBehaviour
     GameManager gameManager;
 
     [Header("Texts")]
-    [SerializeField] TextMeshProUGUI nowNumText;
-    [SerializeField] TextMeshProUGUI nextNumText;
+    [SerializeField] Image nowNumImage;
+    [SerializeField] Image nextNumImage1;
+    [SerializeField] Image nextNumImage2;
     [SerializeField] TextMeshProUGUI eraseCountText, restoreCountText;
     public TextMeshProUGUI nowScoreTxt;
     public TextMeshProUGUI finalScoreTxt;
@@ -35,8 +36,8 @@ public class UIManager : MonoBehaviour
 
     public void UpdateUI()
     {
-        nowNumText.text = gameManager.nowNum.ToString();
-        nextNumText.text = gameManager.nextNum.ToString();
+        //nowNumText.text = gameManager.nowNum.ToString();
+        //nextNumText.text = gameManager.nextNum.ToString();
 
         eraseCountText.text = gameManager.eraseCount.ToString();
         restoreCountText.text = gameManager.restoreCount.ToString();
