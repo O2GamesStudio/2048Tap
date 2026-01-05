@@ -16,17 +16,16 @@ public class GameManager : MonoBehaviour
     int nowScore = 2;
     int highScore = 8;
 
-
     int[] numSet = new int[25];
     int[] RanNumVal = new int[] { 2, 2, 2, 2, 2, 4, 4, 8 };
-    //[SerializeField] Button[] NumBtnSet;
     bool[] isFilled = new bool[25];
 
     [SerializeField] NumBtn[] numBtns;
 
-    // 지우기/복원 기능 추가
+    [Header("Items")]
     [SerializeField] Button eraseBtn;
     [SerializeField] Button restoreBtn;
+    [HideInInspector] public int eraseCount, restoreCount;
     private bool isEraseMode = false;
     private Stack<GameState> actionHistory = new Stack<GameState>();
 
@@ -36,20 +35,27 @@ public class GameManager : MonoBehaviour
         public int[] numSetCopy;
         public int nowScore;
         public int highScore;
+        public int nowNum;
+        public int nextNum;
+        public int eraseCount;
+        // restoreCount는 저장하지 않음 (복원 시 자동으로 처리)
 
-        public GameState(int[] numSet, int score, int high)
+        public GameState(int[] numSet, int score, int high, int now, int next, int erase)
         {
             numSetCopy = new int[25];
             System.Array.Copy(numSet, numSetCopy, 25);
             nowScore = score;
             highScore = high;
+            nowNum = now;
+            nextNum = next;
+            eraseCount = erase;
         }
     }
 
     // 클릭 후 순회 로직
     bool[] visited = new bool[30];
-    int[] sameSpaceNum = new int[30]; //지워저야할 숫자 칸
-    int sameCount = 0; //같은 숫자가 몇개 있는지
+    int[] sameSpaceNum = new int[30];
+    int sameCount = 0;
     int clickedPos;
 
     void Awake()
@@ -57,11 +63,13 @@ public class GameManager : MonoBehaviour
         if (Instance == null) Instance = this;
         else Destroy(gameObject);
     }
+
     void Start()
     {
         uiManager = UIManager.Instance;
+        eraseCount = 3;
+        restoreCount = 3;
 
-        // 버튼 리스너 추가
         if (eraseBtn != null)
             eraseBtn.onClick.AddListener(ToggleEraseMode);
 
@@ -71,8 +79,9 @@ public class GameManager : MonoBehaviour
         InitGame();
         uiManager.highScoreTxt.text = PlayerPrefs.GetInt("HighScore").ToString();
 
-        UpdateRestoreButton();
+        UpdateItemButtons();
     }
+
     void InitGame()
     {
         for (int a = 0; a < 25; a++)
@@ -85,8 +94,11 @@ public class GameManager : MonoBehaviour
         for (int a = 0; a < 4; a++)
         {
             int ranIndex = Random.Range(0, 25);
+            while (numSet[ranIndex] != 0)
+            {
+                ranIndex = Random.Range(0, 25);
+            }
             int val_nul = Random.Range(0, 8);
-
             SetNum(ranIndex, RanNumVal[val_nul]);
         }
         nextNum = 2;
@@ -108,8 +120,6 @@ public class GameManager : MonoBehaviour
         int filledCount = 0;
         for (int a = 0; a < 25; a++)
         {
-            //칸 순회하면서 있는지 없는지 확인하기
-            //꽉 차 있으면 GameOver
             if (numSet[a] != 0)
             {
                 filledCount++;
@@ -123,6 +133,7 @@ public class GameManager : MonoBehaviour
         numSet[index] = val;
         numBtns[index].SetNumText(val);
     }
+
     void SetNextNum()
     {
         if (highScore <= 8)
@@ -152,16 +163,16 @@ public class GameManager : MonoBehaviour
         else if (highScore == 64)
         {
             int a = Random.Range(0, 100);
-            if (a <= 50) nextNum = 2;
-            else if (a > 50 && a <= 80) nextNum = 4;
+            if (a <= 45) nextNum = 2;
+            else if (a > 45 && a <= 80) nextNum = 4;
             else if (a > 80 && a <= 94) nextNum = 8;
             else nextNum = 16;
         }
         else if (highScore == 128)
         {
             int a = Random.Range(0, 100);
-            if (a <= 45) nextNum = 2;
-            else if (a > 45 && a <= 75) nextNum = 4;
+            if (a <= 40) nextNum = 2;
+            else if (a > 40 && a <= 75) nextNum = 4;
             else if (a > 75 && a <= 91) nextNum = 8;
             else if (a > 91 && a <= 98) nextNum = 16;
             else nextNum = 32;
@@ -169,9 +180,9 @@ public class GameManager : MonoBehaviour
         else if (highScore == 256)
         {
             int a = Random.Range(0, 100);
-            if (a <= 43) nextNum = 2;
-            else if (a > 43 && a <= 65) nextNum = 4;
-            else if (a > 65 && a <= 85) nextNum = 8;
+            if (a <= 35) nextNum = 2;
+            else if (a > 35 && a <= 62) nextNum = 4;
+            else if (a > 62 && a <= 85) nextNum = 8;
             else if (a > 85 && a <= 96) nextNum = 16;
             else nextNum = 32;
         }
@@ -186,18 +197,21 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    // 지우기 모드 토글
     void ToggleEraseMode()
     {
-        isEraseMode = !isEraseMode;
+        if (eraseCount <= 0)
+        {
+            Debug.Log("지우기 아이템이 없습니다!");
+            return;
+        }
 
-        // 버튼 색상 변경으로 모드 표시
+        isEraseMode = !isEraseMode;
         if (eraseBtn != null)
         {
             ColorBlock colors = eraseBtn.colors;
             if (isEraseMode)
             {
-                colors.normalColor = new Color(1f, 0.6f, 0.6f); // 빨간색 톤
+                colors.normalColor = new Color(1f, 0.6f, 0.6f);
             }
             else
             {
@@ -211,21 +225,19 @@ public class GameManager : MonoBehaviour
 
     public void BtnOnClicked(int index)
     {
-        // 지우기 모드일 때
         if (isEraseMode)
         {
             if (numBtns[index].ReturnNum() != 0)
             {
-                // 현재 상태 저장
+                // ★ 지우기 전 상태 저장
                 SaveGameState();
 
-                // 숫자 지우기
                 numSet[index] = 0;
                 numBtns[index].SetNumText(0);
+                eraseCount--;
 
-                Debug.Log($"칸 {index} 지워짐");
+                Debug.Log($"칸 {index} 지워짐 - 남은 지우기: {eraseCount}");
 
-                // 지우기 모드 해제
                 isEraseMode = false;
                 if (eraseBtn != null)
                 {
@@ -234,7 +246,8 @@ public class GameManager : MonoBehaviour
                     eraseBtn.colors = colors;
                 }
 
-                UpdateRestoreButton();
+                UpdateItemButtons();
+                UpdateInfo();
             }
             else
             {
@@ -243,14 +256,13 @@ public class GameManager : MonoBehaviour
             return;
         }
 
-        // 일반 모드 (기존 로직)
+        // 일반 모드
         if (numBtns[index].ReturnNum() == 0)
         {
-            // 현재 상태 저장
+            // ★ 숫자 배치 전 상태 저장
             SaveGameState();
 
             numBtns[index].SetNumText(nowNum);
-
             clickedPos = index;
             numSet[index] = nowNum;
             sameSpaceNum[0] = clickedPos;
@@ -260,28 +272,33 @@ public class GameManager : MonoBehaviour
             nowNum = nextNum;
             SetNextNum();
 
-            UpdateRestoreButton();
+            UpdateItemButtons();
+
+            if (SoundManager.Instance != null)
+                SoundManager.Instance.PlayBtnClickSFX();
+
+            UpdateInfo();
         }
         else
         {
             Debug.Log("이미 채워진 칸입니다!");
         }
 
-
-        UpdateInfo();
         numBtns[index].UpdateColor();
     }
 
-    // 현재 게임 상태 저장
+    // ★ 현재 상태를 "액션 실행 전"에 저장
     void SaveGameState()
     {
-        GameState state = new GameState(numSet, nowScore, highScore);
+        // 현재 상태를 그대로 저장 (restoreCount 제외)
+        GameState state = new GameState(numSet, nowScore, highScore, nowNum, nextNum, eraseCount);
         actionHistory.Push(state);
 
-        // 히스토리가 너무 많이 쌓이지 않도록 제한 (선택사항)
+        Debug.Log($"[저장] nowNum:{nowNum}, nextNum:{nextNum}, eraseCount:{eraseCount}, Stack Count:{actionHistory.Count}");
+
+        // 히스토리 제한
         if (actionHistory.Count > 20)
         {
-            // Stack을 배열로 변환하여 최근 20개만 유지
             var tempList = new List<GameState>(actionHistory);
             actionHistory.Clear();
             for (int i = 0; i < 20; i++)
@@ -291,21 +308,35 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    // 마지막 액션 복원
+    // ★ 저장된 상태로 복원
     void RestoreLastAction()
     {
+        if (restoreCount <= 0)
+        {
+            Debug.Log("복원 아이템이 없습니다!");
+            return;
+        }
+
         if (actionHistory.Count == 0)
         {
             Debug.Log("복원할 액션이 없습니다!");
             return;
         }
 
+        // restoreCount 먼저 감소
+        restoreCount--;
+
         GameState lastState = actionHistory.Pop();
 
-        // 게임 상태 복원
+        // 저장된 상태 그대로 복원
         System.Array.Copy(lastState.numSetCopy, numSet, 25);
         nowScore = lastState.nowScore;
         highScore = lastState.highScore;
+        nowNum = lastState.nowNum;
+        nextNum = lastState.nextNum;
+        eraseCount = lastState.eraseCount;
+
+        Debug.Log($"[복원] nowNum:{nowNum}, nextNum:{nextNum}, eraseCount:{eraseCount}, Stack Count:{actionHistory.Count}");
 
         // UI 업데이트
         for (int i = 0; i < 25; i++)
@@ -314,17 +345,24 @@ public class GameManager : MonoBehaviour
         }
 
         UpdateInfo();
-        UpdateRestoreButton();
-
-        Debug.Log("이전 상태로 복원되었습니다!");
+        UpdateItemButtons();
     }
 
-    // 복원 버튼 활성화/비활성화
-    void UpdateRestoreButton()
+    void UpdateItemButtons()
     {
         if (restoreBtn != null)
         {
-            restoreBtn.interactable = actionHistory.Count > 0;
+            restoreBtn.interactable = actionHistory.Count > 0 && restoreCount > 0;
+        }
+
+        if (eraseBtn != null)
+        {
+            eraseBtn.interactable = eraseCount > 0;
+        }
+
+        if (uiManager != null)
+        {
+            uiManager.UpdateItemCount(eraseCount, restoreCount);
         }
     }
 
@@ -372,8 +410,13 @@ public class GameManager : MonoBehaviour
     void FindSameNum(int pos)
     {
         TestFind(pos);
+
+        bool wasMerged = false;
+
         while (sameCount >= 2)
         {
+            wasMerged = true;
+
             for (int b = 0; b <= sameCount; b++)
             {
                 numSet[sameSpaceNum[b]] = 0;
@@ -388,6 +431,12 @@ public class GameManager : MonoBehaviour
             sameSpaceNum[0] = tempClickedPos;
 
             TestFind(pos);
+        }
+
+        if (wasMerged && nowNum >= 16 && VFXManager.Instance != null)
+        {
+            Debug.Log($"Play Particle - Final Number: {nowNum}");
+            VFXManager.Instance.PlayCombineParticle(numBtns[clickedPos].transform, nowNum);
         }
 
         if (highScore < nowNum)
