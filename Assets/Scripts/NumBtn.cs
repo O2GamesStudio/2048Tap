@@ -10,6 +10,9 @@ public class NumBtn : MonoBehaviour
     int num = 0;
     INumberProvider numberProvider;
 
+    // 모든 NumBtn의 numImage를 추적하기 위한 static 리스트
+    private static Transform numImageLayer;
+
     void Awake()
     {
         bgImage = GetComponent<Image>();
@@ -24,11 +27,40 @@ public class NumBtn : MonoBehaviour
             Debug.LogError("NumBtn에 자식 Image가 없습니다!");
         }
 
-        // ★ Awake에서 numberProvider 초기화
         if (GameManager.Instance != null)
             numberProvider = GameManager.Instance;
         else if (TutorialManager.Instance != null)
             numberProvider = TutorialManager.Instance;
+    }
+
+    void Start()
+    {
+        // 첫 실행 시 numImage 레이어 생성
+        if (numImageLayer == null)
+        {
+            GameObject layerObj = new GameObject("NumImageLayer");
+            numImageLayer = layerObj.transform;
+            numImageLayer.SetParent(transform.parent.parent); // Grid의 부모로 설정
+
+            RectTransform layerRect = layerObj.AddComponent<RectTransform>();
+            layerRect.anchorMin = Vector2.zero;
+            layerRect.anchorMax = Vector2.one;
+            layerRect.sizeDelta = Vector2.zero;
+            layerRect.anchoredPosition = Vector2.zero;
+
+            // 맨 위로 이동
+            numImageLayer.SetAsLastSibling();
+        }
+
+        // numImage를 numImageLayer로 이동
+        if (numImage != null)
+        {
+            RectTransform numRect = numImage.GetComponent<RectTransform>();
+            Vector3 worldPos = numRect.position;
+
+            numRect.SetParent(numImageLayer, true);
+            numRect.position = worldPos; // 위치 유지
+        }
     }
 
     public int ReturnNum()
@@ -44,7 +76,6 @@ public class NumBtn : MonoBehaviour
 
     public void UpdateBtnImage()
     {
-        // ★ numberProvider가 없으면 다시 찾기
         if (numberProvider == null)
         {
             if (GameManager.Instance != null)
@@ -98,18 +129,19 @@ public class NumBtn : MonoBehaviour
         if (numImage == null) return;
 
         RectTransform numRect = numImage.GetComponent<RectTransform>();
+        Vector3 startPos = numRect.position;
 
-        Vector3 originalLocalPos = numRect.localPosition;
-        Vector3 targetLocalPos = numRect.parent.InverseTransformPoint(targetWorldPos);
+        // 애니메이션 중 살짝 뒤로 (형제 순서)
+        numRect.SetAsFirstSibling();
 
-        numImage.transform.SetAsFirstSibling();
-        numRect.DOLocalMove(targetLocalPos, duration)
+        numRect.DOMove(targetWorldPos, duration)
             .SetEase(Ease.InOutQuad)
             .OnComplete(() =>
             {
-                numRect.localPosition = originalLocalPos;
+                numRect.position = startPos;
 
-                numImage.transform.SetAsLastSibling();
+                // 원래 순서로 복원
+                numRect.SetAsLastSibling();
 
                 num = 0;
                 UpdateBtnImage();
@@ -117,6 +149,7 @@ public class NumBtn : MonoBehaviour
                 onComplete?.Invoke();
             });
     }
+
     public void EraseAnimationToZero(float duration = 0.2f, System.Action onComplete = null)
     {
         if (numImage == null) return;
