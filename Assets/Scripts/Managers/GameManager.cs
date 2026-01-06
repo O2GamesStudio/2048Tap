@@ -5,18 +5,24 @@ using TMPro;
 using System.Collections.Generic;
 using System.Collections;
 using System.Linq;
+using Unity.VisualScripting;
 
-public class GameManager : MonoBehaviour
+public class GameManager : MonoBehaviour, INumberProvider
 {
     public static GameManager Instance { get; private set; }
+    SoundManager soundManager;
     UIManager uiManager;
 
     [Header("Grid Settings")]
     [SerializeField] int gridSize = 5;
     private int totalCells;
 
-    public Sprite[] numberSprites;
-    [HideInInspector] public int nowNum, nextNum, nextNum2;
+    public Sprite[] numberSprites { get { return _numberSprites; } }
+    [SerializeField] private Sprite[] _numberSprites;
+
+    [HideInInspector] public int nowNum { get; private set; }
+    [HideInInspector] public int nextNum { get; private set; }
+    [HideInInspector] public int nextNum2 { get; private set; }
     int nowScore = 2;
     int highScore = 8;
 
@@ -29,7 +35,9 @@ public class GameManager : MonoBehaviour
     [Header("Items")]
     [SerializeField] Button eraseBtn;
     [SerializeField] Button restoreBtn;
-    [HideInInspector] public int eraseCount, restoreCount;
+    [HideInInspector] public int eraseCount { get; private set; }
+    [HideInInspector] public int restoreCount { get; private set; }
+
     private bool isEraseMode = false;
     private Stack<GameState> actionHistory = new Stack<GameState>();
 
@@ -88,6 +96,7 @@ public class GameManager : MonoBehaviour
     void Start()
     {
         uiManager = UIManager.Instance;
+        soundManager = SoundManager.Instance;
         eraseCount = 1;
         restoreCount = 1000;
 
@@ -276,8 +285,11 @@ public class GameManager : MonoBehaviour
             {
                 SaveGameState();
 
-                numSet[index] = 0;
-                numBtns[index].SetNumText(0);
+                numBtns[index].EraseAnimationToZero(0.2f, () =>
+                {
+                    numSet[index] = 0;
+                });
+
                 eraseCount--;
 
                 isEraseMode = false;
@@ -287,6 +299,9 @@ public class GameManager : MonoBehaviour
                     colors.normalColor = Color.white;
                     eraseBtn.colors = colors;
                 }
+
+                if (soundManager != null)
+                    soundManager.PlaySFX(soundManager.eraseClip);
 
                 UpdateItemButtons();
                 UpdateInfo();
@@ -311,8 +326,8 @@ public class GameManager : MonoBehaviour
 
             UpdateItemButtons();
 
-            if (SoundManager.Instance != null)
-                SoundManager.Instance.PlayBtnClickSFX();
+            if (soundManager != null)
+                soundManager.PlayBtnClickSFX();
         }
         else
         {
@@ -376,6 +391,9 @@ public class GameManager : MonoBehaviour
         {
             numBtns[i].SetNumText(numSet[i]);
         }
+
+        if (soundManager != null)
+            soundManager.PlaySFX(soundManager.restoreClip);
 
         UpdateInfo();
         UpdateItemButtons();
@@ -493,6 +511,9 @@ public class GameManager : MonoBehaviour
                 }
             }
 
+            if (soundManager != null)
+                soundManager.PlaySFX(soundManager.slideClip);
+
             yield return new WaitForSeconds(btnCombineTime);
 
             numSet[clickedPos] = 0;
@@ -501,6 +522,12 @@ public class GameManager : MonoBehaviour
             nowNum *= 2;
             numSet[clickedPos] = nowNum;
             numBtns[clickedPos].SetNumText(nowNum);
+
+            if (nowNum >= 16 && VFXManager.Instance != null)
+            {
+                VFXManager.Instance.PlayCombineParticle(numBtns[clickedPos].transform, nowNum);
+                soundManager.PlaySFX(soundManager.combineComboClip);
+            }
 
             int tempClickedPos = clickedPos;
             ResetValue();
@@ -513,12 +540,6 @@ public class GameManager : MonoBehaviour
 
             yield return new WaitForSeconds(combineDelayTime);
         }
-
-        if (wasMerged && nowNum >= 16 && VFXManager.Instance != null)
-        {
-            VFXManager.Instance.PlayCombineParticle(numBtns[clickedPos].transform, nowNum);
-        }
-
         if (highScore < nowNum)
         {
             highScore = nowNum;

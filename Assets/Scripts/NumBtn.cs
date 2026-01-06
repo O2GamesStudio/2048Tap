@@ -8,6 +8,7 @@ public class NumBtn : MonoBehaviour
     Image bgImage;
     Image numImage;
     int num = 0;
+    INumberProvider numberProvider;
 
     void Awake()
     {
@@ -22,6 +23,12 @@ public class NumBtn : MonoBehaviour
         {
             Debug.LogError("NumBtn에 자식 Image가 없습니다!");
         }
+
+        // ★ Awake에서 numberProvider 초기화
+        if (GameManager.Instance != null)
+            numberProvider = GameManager.Instance;
+        else if (TutorialManager.Instance != null)
+            numberProvider = TutorialManager.Instance;
     }
 
     public int ReturnNum()
@@ -37,45 +44,55 @@ public class NumBtn : MonoBehaviour
 
     public void UpdateBtnImage()
     {
-        if (numImage == null) return;
+        // ★ numberProvider가 없으면 다시 찾기
+        if (numberProvider == null)
+        {
+            if (GameManager.Instance != null)
+                numberProvider = GameManager.Instance;
+            else if (TutorialManager.Instance != null)
+                numberProvider = TutorialManager.Instance;
+        }
+
+        if (numImage == null || numberProvider == null) return;
 
         if (num == 0)
         {
-            numImage.sprite = GameManager.Instance.numberSprites[0];
+            numImage.sprite = numberProvider.numberSprites[0];
         }
         else if (num == 2)
         {
-            numImage.sprite = GameManager.Instance.numberSprites[1];
+            numImage.sprite = numberProvider.numberSprites[1];
         }
         else if (num == 4)
         {
-            numImage.sprite = GameManager.Instance.numberSprites[2];
+            numImage.sprite = numberProvider.numberSprites[2];
         }
         else if (num == 8)
         {
-            numImage.sprite = GameManager.Instance.numberSprites[3];
+            numImage.sprite = numberProvider.numberSprites[3];
         }
         else if (num == 16)
         {
-            numImage.sprite = GameManager.Instance.numberSprites[4];
+            numImage.sprite = numberProvider.numberSprites[4];
         }
         else if (num == 32)
         {
-            numImage.sprite = GameManager.Instance.numberSprites[5];
+            numImage.sprite = numberProvider.numberSprites[5];
         }
         else if (num == 64)
         {
-            numImage.sprite = GameManager.Instance.numberSprites[6];
+            numImage.sprite = numberProvider.numberSprites[6];
         }
         else if (num == 128)
         {
-            numImage.sprite = GameManager.Instance.numberSprites[7];
+            numImage.sprite = numberProvider.numberSprites[7];
         }
         else if (num == 256)
         {
-            numImage.sprite = GameManager.Instance.numberSprites[8];
+            numImage.sprite = numberProvider.numberSprites[8];
         }
     }
+
     public void MergeAnimationToTarget(Vector3 targetWorldPos, float duration = 0.3f, System.Action onComplete = null)
     {
         if (numImage == null) return;
@@ -96,6 +113,23 @@ public class NumBtn : MonoBehaviour
 
                 num = 0;
                 UpdateBtnImage();
+
+                onComplete?.Invoke();
+            });
+    }
+    public void EraseAnimationToZero(float duration = 0.2f, System.Action onComplete = null)
+    {
+        if (numImage == null) return;
+
+        Color originalColor = numImage.color;
+        numImage.DOFade(0f, duration)
+            .SetEase(Ease.InOutQuad)
+            .OnComplete(() =>
+            {
+                num = 0;
+                UpdateBtnImage();
+
+                numImage.color = new Color(originalColor.r, originalColor.g, originalColor.b, 1f);
 
                 onComplete?.Invoke();
             });

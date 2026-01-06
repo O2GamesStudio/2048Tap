@@ -6,12 +6,12 @@ public class UIManager : MonoBehaviour
 {
     public static UIManager Instance { get; private set; }
 
-    GameManager gameManager;
+    INumberProvider numberProvider;
 
     [Header("Number Images")]
     [SerializeField] Image nowNumImage;
-    [SerializeField] Image nextNumImage1; // 첫 번째 다음 숫자
-    [SerializeField] Image nextNumImage2; // 두 번째 다음 숫자
+    [SerializeField] Image nextNumImage1;
+    [SerializeField] Image nextNumImage2;
 
     [Header("Texts")]
     [SerializeField] TextMeshProUGUI eraseCountText, restoreCountText;
@@ -34,42 +34,43 @@ public class UIManager : MonoBehaviour
 
     void Start()
     {
-        gameManager = GameManager.Instance;
+        if (GameManager.Instance != null)
+            numberProvider = GameManager.Instance;
+        else if (TutorialManager.Instance != null)
+            numberProvider = TutorialManager.Instance;
     }
 
     public void UpdateUI()
     {
-        // ★ 이미지 업데이트
         UpdateNumberImages();
 
-        eraseCountText.text = gameManager.eraseCount.ToString();
-        restoreCountText.text = gameManager.restoreCount.ToString();
+        if (numberProvider != null)
+        {
+            eraseCountText.text = numberProvider.eraseCount.ToString();
+            restoreCountText.text = numberProvider.restoreCount.ToString();
+        }
     }
 
-    // ★ 숫자 이미지 업데이트 메서드
     void UpdateNumberImages()
     {
-        if (gameManager == null || gameManager.numberSprites == null) return;
+        if (numberProvider == null || numberProvider.numberSprites == null) return;
 
-        // nowNum 이미지 업데이트
         if (nowNumImage != null)
         {
-            int nowIndex = gameManager.GetSpriteIndex(gameManager.nowNum);
-            nowNumImage.sprite = gameManager.numberSprites[nowIndex];
+            int nowIndex = numberProvider.GetSpriteIndex(numberProvider.nowNum);
+            nowNumImage.sprite = numberProvider.numberSprites[nowIndex];
         }
 
-        // nextNum 이미지 업데이트
         if (nextNumImage1 != null)
         {
-            int nextIndex1 = gameManager.GetSpriteIndex(gameManager.nextNum);
-            nextNumImage1.sprite = gameManager.numberSprites[nextIndex1];
+            int nextIndex1 = numberProvider.GetSpriteIndex(numberProvider.nextNum);
+            nextNumImage1.sprite = numberProvider.numberSprites[nextIndex1];
         }
 
-        // nextNum2 이미지 업데이트
         if (nextNumImage2 != null)
         {
-            int nextIndex2 = gameManager.GetSpriteIndex(gameManager.nextNum2);
-            nextNumImage2.sprite = gameManager.numberSprites[nextIndex2];
+            int nextIndex2 = numberProvider.GetSpriteIndex(numberProvider.nextNum2);
+            nextNumImage2.sprite = numberProvider.numberSprites[nextIndex2];
         }
     }
 
@@ -85,5 +86,6 @@ public class UIManager : MonoBehaviour
     void SettingOnClick()
     {
         settingPanel.SetActive(true);
+        SoundManager.Instance.PlayUIBtnClickSFX();
     }
 }

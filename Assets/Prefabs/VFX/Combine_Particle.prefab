@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 6653946304694588201}
   - component: {fileID: 1044308172475097693}
   - component: {fileID: 1790881690377155585}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Combine_Particle
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -27,7 +27,7 @@ Transform:
   m_GameObject: {fileID: 549325206925001100}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.8854167, y: 0.36458334, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

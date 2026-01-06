@@ -13,26 +13,25 @@ public class SoundManager : MonoBehaviour
     [Header("Audio Clips")]
     [SerializeField] AudioClip[] sfxClips;
     [SerializeField] AudioClip[] bgmClips;
-    [SerializeField] AudioClip buttonClickClip;
+    public AudioClip buttonClickClip, uiBtnClickClip, combineComboClip, eraseClip, restoreClip, slideClip;
 
     [Header("Volume Settings")]
     [SerializeField][Range(0f, 1f)] float sfxVolume = 1f;
     [SerializeField][Range(0f, 1f)] float bgmVolume = 0.5f;
 
-    // AudioSource 풀
+    private bool isSoundEnabled = true;
+    private bool isMusicEnabled = true;
+
     private Queue<AudioSource> audioSourcePool = new Queue<AudioSource>();
     private List<AudioSource> activeAudioSources = new List<AudioSource>();
 
-    // BGM 전용 AudioSource
     private AudioSource bgmSource;
 
-    // AudioClip Dictionary (이름으로 빠른 접근)
     private Dictionary<string, AudioClip> sfxDictionary = new Dictionary<string, AudioClip>();
     private Dictionary<string, AudioClip> bgmDictionary = new Dictionary<string, AudioClip>();
 
     void Awake()
     {
-        // 싱글톤 패턴
         if (Instance == null)
         {
             Instance = this;
@@ -47,27 +46,26 @@ public class SoundManager : MonoBehaviour
 
     void InitializeSoundManager()
     {
-        // AudioSource 풀 초기화
         for (int i = 0; i < initialPoolSize; i++)
         {
             CreateNewAudioSource();
         }
 
-        // BGM 전용 AudioSource 생성
         bgmSource = gameObject.AddComponent<AudioSource>();
         bgmSource.loop = true;
         bgmSource.volume = bgmVolume;
         bgmSource.playOnAwake = false;
 
-        // AudioClip Dictionary 초기화
         InitializeAudioClipDictionaries();
+
+        isSoundEnabled = PlayerPrefs.GetInt("IsSoundOn", 1) == 1;
+        isMusicEnabled = PlayerPrefs.GetInt("IsMusicOn", 1) == 1;
 
         Debug.Log($"SoundManager 초기화 완료 - 풀 크기: {audioSourcePool.Count}");
     }
 
     void InitializeAudioClipDictionaries()
     {
-        // SFX Dictionary
         if (sfxClips != null)
         {
             foreach (AudioClip clip in sfxClips)
@@ -79,7 +77,6 @@ public class SoundManager : MonoBehaviour
             }
         }
 
-        // BGM Dictionary
         if (bgmClips != null)
         {
             foreach (AudioClip clip in bgmClips)
@@ -107,7 +104,6 @@ public class SoundManager : MonoBehaviour
     {
         AudioSource audioSource;
 
-        // 풀에서 사용 가능한 AudioSource 찾기
         while (audioSourcePool.Count > 0)
         {
             audioSource = audioSourcePool.Dequeue();
@@ -118,17 +114,15 @@ public class SoundManager : MonoBehaviour
             }
         }
 
-        // 풀에 없으면 새로 생성 (최대 크기 체크)
         if (activeAudioSources.Count < maxPoolSize)
         {
             audioSource = CreateNewAudioSource();
-            audioSourcePool.Dequeue(); // 방금 추가한 것을 빼냄
+            audioSourcePool.Dequeue();
             activeAudioSources.Add(audioSource);
             Debug.Log($"새로운 AudioSource 생성됨 - 현재 활성: {activeAudioSources.Count}");
             return audioSource;
         }
 
-        // 최대 크기 도달 시 가장 오래된 활성 AudioSource 재사용
         Debug.LogWarning("AudioSource 풀 최대 크기 도달 - 가장 오래된 소스 재사용");
         audioSource = activeAudioSources[0];
         audioSource.Stop();
@@ -149,8 +143,56 @@ public class SoundManager : MonoBehaviour
         }
     }
 
+    public void SetSoundEnabled(bool enabled)
+    {
+        isSoundEnabled = enabled;
+
+        if (!enabled)
+        {
+            StopAllSFX();
+        }
+    }
+
+    public void SetMusicEnabled(bool enabled)
+    {
+        isMusicEnabled = enabled;
+
+        if (bgmSource != null)
+        {
+            if (enabled)
+            {
+                if (!bgmSource.isPlaying && bgmSource.clip != null)
+                    bgmSource.Play();
+            }
+            else
+            {
+                bgmSource.Pause();
+            }
+        }
+    }
+
+    public void PlayUIClickSFX(float volumeScale = 1f)
+    {
+        if (!isSoundEnabled) return;
+
+        if (uiBtnClickClip == null)
+        {
+            Debug.LogWarning("재생할 AudioClip이 null입니다!");
+            return;
+        }
+
+        AudioSource audioSource = GetAudioSource();
+        audioSource.clip = uiBtnClickClip;
+        audioSource.volume = sfxVolume * volumeScale;
+        audioSource.Play();
+
+        StartCoroutine(ReturnToPoolAfterPlay(audioSource, uiBtnClickClip.length));
+    }
+
     public void PlayBtnClickSFX(float volumeScale = 1f)
     {
+        if (!isSoundEnabled) return;
+
         if (buttonClickClip == null)
         {
             Debug.LogWarning("재생할 AudioClip이 null입니다!");
@@ -164,9 +206,83 @@ public class SoundManager : MonoBehaviour
 
         StartCoroutine(ReturnToPoolAfterPlay(audioSource, buttonClickClip.length));
     }
-    // SFX 재생 (AudioClip 직접 전달)
+
+    public void PlayUIBtnClickSFX(float volumeScale = 1f)
+    {
+        if (!isSoundEnabled) return;
+
+        if (uiBtnClickClip == null)
+        {
+            Debug.LogWarning("재생할 AudioClip이 null입니다!");
+            return;
+        }
+
+        AudioSource audioSource = GetAudioSource();
+        audioSource.clip = uiBtnClickClip;
+        audioSource.volume = sfxVolume * volumeScale;
+        audioSource.Play();
+
+        StartCoroutine(ReturnToPoolAfterPlay(audioSource, uiBtnClickClip.length));
+    }
+
+    public void PlayMergeSFX(float volumeScale = 1f)
+    {
+        if (!isSoundEnabled) return;
+
+        if (combineComboClip == null)
+        {
+            Debug.LogWarning("재생할 AudioClip이 null입니다!");
+            return;
+        }
+
+        AudioSource audioSource = GetAudioSource();
+        audioSource.clip = combineComboClip;
+        audioSource.volume = sfxVolume * volumeScale;
+        audioSource.Play();
+
+        StartCoroutine(ReturnToPoolAfterPlay(audioSource, combineComboClip.length));
+    }
+
+    public void PlayEraseSFX(float volumeScale = 1f)
+    {
+        if (!isSoundEnabled) return;
+
+        if (eraseClip == null)
+        {
+            Debug.LogWarning("재생할 AudioClip이 null입니다!");
+            return;
+        }
+
+        AudioSource audioSource = GetAudioSource();
+        audioSource.clip = eraseClip;
+        audioSource.volume = sfxVolume * volumeScale;
+        audioSource.Play();
+
+        StartCoroutine(ReturnToPoolAfterPlay(audioSource, eraseClip.length));
+    }
+
+    public void PlayRestoreSFX(float volumeScale = 1f)
+    {
+        if (!isSoundEnabled) return;
+
+        if (restoreClip == null)
+        {
+            Debug.LogWarning("재생할 AudioClip이 null입니다!");
+            return;
+        }
+
+        AudioSource audioSource = GetAudioSource();
+        audioSource.clip = restoreClip;
+        audioSource.volume = sfxVolume * volumeScale;
+        audioSource.Play();
+
+        StartCoroutine(ReturnToPoolAfterPlay(audioSource, restoreClip.length));
+    }
+
     public void PlaySFX(AudioClip clip, float volumeScale = 1f)
     {
+        if (!isSoundEnabled) return;
+
         if (clip == null)
         {
             Debug.LogWarning("재생할 AudioClip이 null입니다!");
@@ -181,9 +297,10 @@ public class SoundManager : MonoBehaviour
         StartCoroutine(ReturnToPoolAfterPlay(audioSource, clip.length));
     }
 
-    // SFX 재생 (이름으로 검색)
     public void PlaySFX(string clipName, float volumeScale = 1f)
     {
+        if (!isSoundEnabled) return;
+
         if (sfxDictionary.TryGetValue(clipName, out AudioClip clip))
         {
             PlaySFX(clip, volumeScale);
@@ -194,9 +311,9 @@ public class SoundManager : MonoBehaviour
         }
     }
 
-    // OneShot 방식 (더 짧은 사운드에 적합)
     public void PlayOneShotSFX(AudioClip clip, float volumeScale = 1f)
     {
+        if (!isSoundEnabled) return;
         if (clip == null) return;
 
         AudioSource audioSource = GetAudioSource();
@@ -207,6 +324,8 @@ public class SoundManager : MonoBehaviour
 
     public void PlayOneShotSFX(string clipName, float volumeScale = 1f)
     {
+        if (!isSoundEnabled) return;
+
         if (sfxDictionary.TryGetValue(clipName, out AudioClip clip))
         {
             PlayOneShotSFX(clip, volumeScale);
@@ -219,42 +338,28 @@ public class SoundManager : MonoBehaviour
 
     IEnumerator ReturnToPoolAfterPlay(AudioSource audioSource, float delay)
     {
-        yield return new WaitForSeconds(delay + 0.1f); // 약간의 여유 시간
+        yield return new WaitForSeconds(delay + 0.1f);
         ReturnAudioSource(audioSource);
     }
 
-    // BGM 재생
-    public void PlayBGM(AudioClip clip, bool loop = true)
+    public void PlayBGM(bool loop = true)
     {
-        if (clip == null) return;
+        if (!isMusicEnabled) return;
+        if (bgmClips == null || bgmClips.Length == 0 || bgmClips[0] == null) return;
 
-        if (bgmSource.clip == clip && bgmSource.isPlaying)
+        if (bgmSource.clip == bgmClips[0] && bgmSource.isPlaying)
             return;
 
-        bgmSource.clip = clip;
+        bgmSource.clip = bgmClips[0];
         bgmSource.loop = loop;
         bgmSource.Play();
     }
 
-    public void PlayBGM(string clipName, bool loop = true)
-    {
-        if (bgmDictionary.TryGetValue(clipName, out AudioClip clip))
-        {
-            PlayBGM(clip, loop);
-        }
-        else
-        {
-            Debug.LogWarning($"BGM '{clipName}'를 찾을 수 없습니다!");
-        }
-    }
-
-    // BGM 정지
     public void StopBGM()
     {
         bgmSource.Stop();
     }
 
-    // BGM 일시정지/재개
     public void PauseBGM()
     {
         bgmSource.Pause();
@@ -262,10 +367,10 @@ public class SoundManager : MonoBehaviour
 
     public void ResumeBGM()
     {
-        bgmSource.UnPause();
+        if (isMusicEnabled)
+            bgmSource.UnPause();
     }
 
-    // BGM 페이드 인/아웃
     public void FadeBGM(float targetVolume, float duration)
     {
         StartCoroutine(FadeBGMCoroutine(targetVolume, duration));
@@ -286,7 +391,6 @@ public class SoundManager : MonoBehaviour
         bgmSource.volume = targetVolume;
     }
 
-    // 모든 SFX 정지
     public void StopAllSFX()
     {
         foreach (AudioSource source in activeAudioSources)
@@ -297,14 +401,12 @@ public class SoundManager : MonoBehaviour
             }
         }
 
-        // 모든 활성 소스를 풀로 반환
         while (activeAudioSources.Count > 0)
         {
             ReturnAudioSource(activeAudioSources[0]);
         }
     }
 
-    // 볼륨 설정
     public void SetSFXVolume(float volume)
     {
         sfxVolume = Mathf.Clamp01(volume);
@@ -323,7 +425,6 @@ public class SoundManager : MonoBehaviour
         bgmSource.volume = bgmVolume;
     }
 
-    // 풀 상태 확인 (디버깅용)
     public void PrintPoolStatus()
     {
         Debug.Log($"풀 상태 - 사용 가능: {audioSourcePool.Count}, 활성: {activeAudioSources.Count}");

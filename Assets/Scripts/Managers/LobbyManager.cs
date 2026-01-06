@@ -10,7 +10,6 @@ public class LobbyManager : MonoBehaviour
     [Header("Button UI")]
     [SerializeField] Button gameStartBtn;
     [SerializeField] Button preChapterBtn, nextChapterBtn;
-    [SerializeField] Button eraseBtn, restoreBtn;
 
     [Header("Image UI")]
     [SerializeField] Image[] chapterImages;
@@ -38,8 +37,11 @@ public class LobbyManager : MonoBehaviour
         preChapterBtn.onClick.AddListener(() => ChapterMoveOnClick(-1));
         nextChapterBtn.onClick.AddListener(() => ChapterMoveOnClick(1));
 
-        // 초기 위치 및 스케일 설정
         InitializeChapterPositions();
+    }
+    void Start()
+    {
+        SoundManager.Instance.PlayBGM();
     }
 
     void InitializeChapterPositions()
@@ -84,6 +86,7 @@ public class LobbyManager : MonoBehaviour
     {
         if (isAnimating) return;
 
+        SoundManager.Instance.PlayUIBtnClickSFX();
         StartCoroutine(BtnClickAnim(dir));
         if (dir == -1) //이전 챕터로 이동
         {
@@ -137,12 +140,13 @@ public class LobbyManager : MonoBehaviour
 
     void UpdateChapterTextUI(int chapterNum)
     {
-        if (chapterNum == 0) chapterText.text = "5x5";
-        else if (chapterNum == 1) chapterText.text = "4x4";
+        if (chapterNum == 0) chapterText.text = "4x4";
+        else if (chapterNum == 1) chapterText.text = "5x5";
     }
 
     void StartOnClick()
     {
+        SoundManager.Instance.PlayUIBtnClickSFX();
         SceneManager.LoadScene(chapterNum + 1);
     }
 

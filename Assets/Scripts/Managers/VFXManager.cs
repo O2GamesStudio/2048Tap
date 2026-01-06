@@ -28,7 +28,6 @@ public class VFXManager : MonoBehaviour
         if (Instance == null)
         {
             Instance = this;
-            DontDestroyOnLoad(gameObject);
             InitializeVFXManager();
         }
         else

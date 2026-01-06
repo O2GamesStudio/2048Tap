@@ -790,6 +790,63 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 765350398}
   m_CullTransparentMesh: 1
+--- !u!1 &954302987
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 954302989}
+  - component: {fileID: 954302988}
+  m_Layer: 0
+  m_Name: SoundManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &954302988
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 954302987}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 291ef770e3a993c469725dd0f6d1ed7f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SoundManager
+  initialPoolSize: 10
+  maxPoolSize: 20
+  sfxClips: []
+  bgmClips:
+  - {fileID: 8300000, guid: 70acea24e2b65494d9e089f21f242efe, type: 3}
+  buttonClickClip: {fileID: 8300000, guid: 7c8e03e69c63a5448aaaf37c36286af9, type: 3}
+  uiBtnClickClip: {fileID: 8300000, guid: da4734c1ade62a342833294a0bf62ac7, type: 3}
+  combineComboClip: {fileID: 8300000, guid: 52fa7d616404b884590fb09f266f6d05, type: 3}
+  eraseClip: {fileID: 8300000, guid: 1756d7aa2be5ab7418ee2446511487da, type: 3}
+  restoreClip: {fileID: 8300000, guid: 45c1428d7af56a145be74f16408a501a, type: 3}
+  slideClip: {fileID: 8300000, guid: f00a4aa8e8e5cc446b3148aa4b9b6695, type: 3}
+  sfxVolume: 1
+  bgmVolume: 0.5
+--- !u!4 &954302989
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 954302987}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1290817323
 GameObject:
   m_ObjectHideFlags: 0
@@ -1489,7 +1546,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 5x5
+  m_text: 4x4
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 2bb78e621b2f0e74694a298ea9d4a42e, type: 2}
   m_sharedMaterial: {fileID: 2280596248387345898, guid: 2bb78e621b2f0e74694a298ea9d4a42e, type: 2}
@@ -1682,5 +1739,6 @@ SceneRoots:
   - {fileID: 1327498148}
   - {fileID: 1290817324}
   - {fileID: 539302530}
+  - {fileID: 954302989}
   - {fileID: 1652413669}
   - {fileID: 1931046628}
