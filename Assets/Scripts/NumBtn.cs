@@ -8,9 +8,11 @@ public class NumBtn : MonoBehaviour
     Image bgImage;
     Image numImage;
     int num = 0;
+
     void Awake()
     {
         bgImage = GetComponent<Image>();
+
         Image[] images = GetComponentsInChildren<Image>();
         if (images.Length >= 2)
         {
@@ -21,17 +23,22 @@ public class NumBtn : MonoBehaviour
             Debug.LogError("NumBtn에 자식 Image가 없습니다!");
         }
     }
+
     public int ReturnNum()
     {
         return num;
     }
+
     public void SetNumText(int _num)
     {
         num = _num;
         UpdateBtnImage();
     }
+
     public void UpdateBtnImage()
     {
+        if (numImage == null) return;
+
         if (num == 0)
         {
             numImage.sprite = GameManager.Instance.numberSprites[0];
@@ -68,5 +75,29 @@ public class NumBtn : MonoBehaviour
         {
             numImage.sprite = GameManager.Instance.numberSprites[8];
         }
+    }
+    public void MergeAnimationToTarget(Vector3 targetWorldPos, float duration = 0.3f, System.Action onComplete = null)
+    {
+        if (numImage == null) return;
+
+        RectTransform numRect = numImage.GetComponent<RectTransform>();
+
+        Vector3 originalLocalPos = numRect.localPosition;
+        Vector3 targetLocalPos = numRect.parent.InverseTransformPoint(targetWorldPos);
+
+        numImage.transform.SetAsFirstSibling();
+        numRect.DOLocalMove(targetLocalPos, duration)
+            .SetEase(Ease.InOutQuad)
+            .OnComplete(() =>
+            {
+                numRect.localPosition = originalLocalPos;
+
+                numImage.transform.SetAsLastSibling();
+
+                num = 0;
+                UpdateBtnImage();
+
+                onComplete?.Invoke();
+            });
     }
 }

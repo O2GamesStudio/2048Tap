@@ -1,9 +1,9 @@
 using UnityEngine;
-using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 using TMPro;
 using System.Collections.Generic;
+using System.Collections;
 using System.Linq;
 
 public class GameManager : MonoBehaviour
@@ -16,7 +16,7 @@ public class GameManager : MonoBehaviour
     private int totalCells;
 
     public Sprite[] numberSprites;
-    public int nowNum, nextNum, nextNum2; // ★ nextNum2 추가
+    [HideInInspector] public int nowNum, nextNum, nextNum2;
     int nowScore = 2;
     int highScore = 8;
 
@@ -33,7 +33,14 @@ public class GameManager : MonoBehaviour
     private bool isEraseMode = false;
     private Stack<GameState> actionHistory = new Stack<GameState>();
 
+    [Header("Animation Settings")]
+    [SerializeField] float btnCombineTime = 0.2f;
+    [SerializeField] float combineDelayTime = 0.05f;
+    private bool isAnimating = false;
+
+    [SerializeField] GameOverPanel gameOverPanel;
     private const int MAX_HISTORY_SIZE = 20;
+
 
     private struct GameState
     {
@@ -42,7 +49,7 @@ public class GameManager : MonoBehaviour
         public int highScore;
         public int nowNum;
         public int nextNum;
-        public int nextNum2; // ★ nextNum2 추가
+        public int nextNum2;
         public int eraseCount;
         public int gridSize;
 
@@ -56,7 +63,7 @@ public class GameManager : MonoBehaviour
             highScore = high;
             nowNum = now;
             nextNum = next;
-            nextNum2 = next2; // ★ 추가
+            nextNum2 = next2;
             eraseCount = erase;
         }
     }
@@ -81,7 +88,7 @@ public class GameManager : MonoBehaviour
     void Start()
     {
         uiManager = UIManager.Instance;
-        eraseCount = 3;
+        eraseCount = 1;
         restoreCount = 1000;
 
         if (numBtns.Length != totalCells)
@@ -124,8 +131,8 @@ public class GameManager : MonoBehaviour
         }
 
         nowNum = 2;
-        nextNum = GenerateNextNum(); // ★ 첫 번째 다음 숫자 생성
-        nextNum2 = GenerateNextNum(); // ★ 두 번째 다음 숫자 생성
+        nextNum = GenerateNextNum();
+        nextNum2 = GenerateNextNum();
 
         for (int i = 0; i < numBtns.Length; i++)
         {
@@ -148,7 +155,11 @@ public class GameManager : MonoBehaviour
                 filledCount++;
             }
         }
-        if (filledCount >= totalCells) GameOver();
+
+        if (filledCount >= totalCells)
+        {
+            GameOver();
+        }
     }
 
     void SetNum(int index, int val)
@@ -157,7 +168,6 @@ public class GameManager : MonoBehaviour
         numBtns[index].SetNumText(val);
     }
 
-    // ★ 새로운 숫자 생성 메서드 (기존 SetNextNum 로직을 분리)
     int GenerateNextNum()
     {
         int result = 2;
@@ -225,12 +235,11 @@ public class GameManager : MonoBehaviour
         return result;
     }
 
-    // ★ 다음 숫자들을 시프트
     void ShiftNextNums()
     {
-        nowNum = nextNum;        // nextNum이 nowNum으로
-        nextNum = nextNum2;      // nextNum2가 nextNum으로
-        nextNum2 = GenerateNextNum(); // 새로운 nextNum2 생성
+        nowNum = nextNum;
+        nextNum = nextNum2;
+        nextNum2 = GenerateNextNum();
     }
 
     void ToggleEraseMode()
@@ -259,6 +268,8 @@ public class GameManager : MonoBehaviour
 
     public void BtnOnClicked(int index)
     {
+        if (isAnimating) return;
+
         if (isEraseMode)
         {
             if (numBtns[index].ReturnNum() != 0)
@@ -296,17 +307,12 @@ public class GameManager : MonoBehaviour
             numSet[index] = nowNum;
             sameSpaceNum[0] = clickedPos;
 
-            FindSameNum(clickedPos);
-
-            // ★ 숫자를 시프트 (nowNum ← nextNum ← nextNum2 ← 새로생성)
-            ShiftNextNums();
+            StartCoroutine(FindSameNumCoroutine(clickedPos));
 
             UpdateItemButtons();
 
             if (SoundManager.Instance != null)
                 SoundManager.Instance.PlayBtnClickSFX();
-
-            UpdateInfo();
         }
         else
         {
@@ -321,7 +327,6 @@ public class GameManager : MonoBehaviour
         GameState state = new GameState(numSet, nowScore, highScore, nowNum, nextNum, nextNum2, eraseCount, gridSize);
         actionHistory.Push(state);
 
-
         if (actionHistory.Count > MAX_HISTORY_SIZE)
         {
             var tempArray = actionHistory.ToArray();
@@ -334,7 +339,6 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    // ★ 복원 시 nextNum2도 복원
     void RestoreLastAction()
     {
         if (restoreCount <= 0)
@@ -364,8 +368,7 @@ public class GameManager : MonoBehaviour
         highScore = lastState.highScore;
         nowNum = lastState.nowNum;
         nextNum = lastState.nextNum;
-        nextNum2 = lastState.nextNum2; // ★ 복원
-        eraseCount = lastState.eraseCount;
+        nextNum2 = lastState.nextNum2;
 
         Debug.Log($"[복원] Score:{nowScore}, nowNum:{nowNum}, nextNum:{nextNum}, nextNum2:{nextNum2}, Stack:{actionHistory.Count}");
 
@@ -438,21 +441,63 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    void FindSameNum(int pos)
+    IEnumerator FindSameNumCoroutine(int pos)
     {
+        isAnimating = true;
+
         TestFind(pos);
 
+        if (sameCount >= 2)
+        {
+            yield return StartCoroutine(MergeSequence(pos));
+        }
+        else
+        {
+            if (highScore < nowNum)
+            {
+                highScore = nowNum;
+                uiManager.nowScoreTxt.text = nowNum.ToString();
+            }
+            nowScore += nowNum;
+
+            ResetValue();
+            clickedPos = 0;
+        }
+
+        ShiftNextNums();
+        UpdateInfo();
+
+        isAnimating = false;
+    }
+
+    IEnumerator MergeSequence(int pos)
+    {
         bool wasMerged = false;
 
         while (sameCount >= 2)
         {
             wasMerged = true;
 
+            Vector3 targetPos = numBtns[clickedPos].transform.position;
+
             for (int b = 0; b <= sameCount; b++)
             {
-                numSet[sameSpaceNum[b]] = 0;
-                numBtns[sameSpaceNum[b]].SetNumText(0);
+                int currentIndex = sameSpaceNum[b];
+
+                if (currentIndex != clickedPos)
+                {
+                    numBtns[currentIndex].MergeAnimationToTarget(targetPos, btnCombineTime, () =>
+                    {
+                        numSet[currentIndex] = 0;
+                    });
+                }
             }
+
+            yield return new WaitForSeconds(btnCombineTime);
+
+            numSet[clickedPos] = 0;
+            numBtns[clickedPos].SetNumText(0);
+
             nowNum *= 2;
             numSet[clickedPos] = nowNum;
             numBtns[clickedPos].SetNumText(nowNum);
@@ -462,6 +507,11 @@ public class GameManager : MonoBehaviour
             sameSpaceNum[0] = tempClickedPos;
 
             TestFind(pos);
+
+            if (sameCount < 2)
+                break;
+
+            yield return new WaitForSeconds(combineDelayTime);
         }
 
         if (wasMerged && nowNum >= 16 && VFXManager.Instance != null)
@@ -492,12 +542,16 @@ public class GameManager : MonoBehaviour
 
     void GameOver()
     {
+        Debug.Log("GameOver");
         string highScoreKey = $"HighScore_{gridSize}x{gridSize}";
         if (PlayerPrefs.GetInt(highScoreKey) <= nowScore)
         {
             PlayerPrefs.SetInt(highScoreKey, nowScore);
         }
         uiManager.finalScoreTxt.text = nowScore.ToString();
+
+        gameOverPanel.gameObject.SetActive(true);
+        gameOverPanel.UpdateGameOverUI(nowScore);
     }
 
     public int GetSpriteIndex(int number)
