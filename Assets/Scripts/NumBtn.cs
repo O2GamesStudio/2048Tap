@@ -6,10 +6,20 @@ using UnityEngine.UI;
 public class NumBtn : MonoBehaviour
 {
     Image bgImage;
+    Image numImage;
     int num = 0;
     void Awake()
     {
         bgImage = GetComponent<Image>();
+        Image[] images = GetComponentsInChildren<Image>();
+        if (images.Length >= 2)
+        {
+            numImage = images[1];
+        }
+        else
+        {
+            Debug.LogError("NumBtn에 자식 Image가 없습니다!");
+        }
     }
     public int ReturnNum()
     {
@@ -24,39 +34,39 @@ public class NumBtn : MonoBehaviour
     {
         if (num == 0)
         {
-            bgImage.sprite = GameManager.Instance.numberSprites[0];
+            numImage.sprite = GameManager.Instance.numberSprites[0];
         }
         else if (num == 2)
         {
-            bgImage.sprite = GameManager.Instance.numberSprites[1];
+            numImage.sprite = GameManager.Instance.numberSprites[1];
         }
         else if (num == 4)
         {
-            bgImage.sprite = GameManager.Instance.numberSprites[2];
+            numImage.sprite = GameManager.Instance.numberSprites[2];
         }
         else if (num == 8)
         {
-            bgImage.sprite = GameManager.Instance.numberSprites[3];
+            numImage.sprite = GameManager.Instance.numberSprites[3];
         }
         else if (num == 16)
         {
-            bgImage.sprite = GameManager.Instance.numberSprites[4];
+            numImage.sprite = GameManager.Instance.numberSprites[4];
         }
         else if (num == 32)
         {
-            bgImage.sprite = GameManager.Instance.numberSprites[5];
+            numImage.sprite = GameManager.Instance.numberSprites[5];
         }
         else if (num == 64)
         {
-            bgImage.sprite = GameManager.Instance.numberSprites[6];
+            numImage.sprite = GameManager.Instance.numberSprites[6];
         }
         else if (num == 128)
         {
-            bgImage.sprite = GameManager.Instance.numberSprites[7];
+            numImage.sprite = GameManager.Instance.numberSprites[7];
         }
         else if (num == 256)
         {
-            bgImage.sprite = GameManager.Instance.numberSprites[8];
+            numImage.sprite = GameManager.Instance.numberSprites[8];
         }
     }
 }

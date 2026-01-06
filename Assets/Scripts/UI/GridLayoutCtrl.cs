@@ -41,7 +41,31 @@ public class GridLayoutManager : MonoBehaviour
         int padding = Mathf.RoundToInt(gridPadding);
         gridLayoutGroup.padding = new RectOffset(padding, padding, padding, padding);
 
+        // ★ 버튼들의 자식 이미지 크기 조정
+        AdjustChildImages(cellSize);
+
         Debug.Log($"Screen Width: {screenWidth}, Background Size: {backgroundSize}, Cell Size: {cellSize}, Padding: {padding}");
+    }
+
+    void AdjustChildImages(float cellSize)
+    {
+        // GridLayoutGroup의 모든 자식(버튼들)을 순회
+        foreach (Transform button in gridLayoutGroup.transform)
+        {
+            // 버튼의 모든 자식 이미지를 순회
+            foreach (Transform child in button)
+            {
+                RectTransform childRect = child.GetComponent<RectTransform>();
+                if (childRect != null)
+                {
+                    // 자식 이미지의 크기를 부모(버튼)와 동일하게 설정
+                    childRect.sizeDelta = new Vector2(cellSize, cellSize);
+
+                    // 자식이 부모 중앙에 위치하도록 설정 (선택사항)
+                    childRect.anchoredPosition = Vector2.zero;
+                }
+            }
+        }
     }
 
     void OnRectTransformDimensionsChange()
