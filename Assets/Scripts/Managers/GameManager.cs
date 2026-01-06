@@ -4,7 +4,7 @@ using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 using TMPro;
 using System.Collections.Generic;
-using System.Linq; // ★ 추가
+using System.Linq;
 
 public class GameManager : MonoBehaviour
 {
@@ -16,7 +16,7 @@ public class GameManager : MonoBehaviour
     private int totalCells;
 
     public Sprite[] numberSprites;
-    public int nowNum, nextNum;
+    public int nowNum, nextNum, nextNum2; // ★ nextNum2 추가
     int nowScore = 2;
     int highScore = 8;
 
@@ -33,7 +33,6 @@ public class GameManager : MonoBehaviour
     private bool isEraseMode = false;
     private Stack<GameState> actionHistory = new Stack<GameState>();
 
-    // ★ 히스토리 최대 크기 설정
     private const int MAX_HISTORY_SIZE = 20;
 
     private struct GameState
@@ -43,10 +42,11 @@ public class GameManager : MonoBehaviour
         public int highScore;
         public int nowNum;
         public int nextNum;
+        public int nextNum2; // ★ nextNum2 추가
         public int eraseCount;
         public int gridSize;
 
-        public GameState(int[] numSet, int score, int high, int now, int next, int erase, int size)
+        public GameState(int[] numSet, int score, int high, int now, int next, int next2, int erase, int size)
         {
             gridSize = size;
             int totalCells = size * size;
@@ -56,6 +56,7 @@ public class GameManager : MonoBehaviour
             highScore = high;
             nowNum = now;
             nextNum = next;
+            nextNum2 = next2; // ★ 추가
             eraseCount = erase;
         }
     }
@@ -81,7 +82,7 @@ public class GameManager : MonoBehaviour
     {
         uiManager = UIManager.Instance;
         eraseCount = 3;
-        restoreCount = 3;
+        restoreCount = 1000;
 
         if (numBtns.Length != totalCells)
         {
@@ -122,8 +123,9 @@ public class GameManager : MonoBehaviour
             SetNum(ranIndex, RanNumVal[val_nul]);
         }
 
-        nextNum = 2;
         nowNum = 2;
+        nextNum = GenerateNextNum(); // ★ 첫 번째 다음 숫자 생성
+        nextNum2 = GenerateNextNum(); // ★ 두 번째 다음 숫자 생성
 
         for (int i = 0; i < numBtns.Length; i++)
         {
@@ -155,67 +157,80 @@ public class GameManager : MonoBehaviour
         numBtns[index].SetNumText(val);
     }
 
-    void SetNextNum()
+    // ★ 새로운 숫자 생성 메서드 (기존 SetNextNum 로직을 분리)
+    int GenerateNextNum()
     {
+        int result = 2;
+
         if (highScore <= 8)
         {
             int a = Random.Range(0, 4);
             if (a == 3)
             {
-                nextNum = 4;
+                result = 4;
             }
-            else nextNum = 2;
+            else result = 2;
         }
         else if (highScore == 16)
         {
             int a = Random.Range(0, 100);
-            if (a <= 65) nextNum = 2;
-            else if (a > 65 && a <= 90) nextNum = 4;
-            else nextNum = 8;
+            if (a <= 65) result = 2;
+            else if (a > 65 && a <= 90) result = 4;
+            else result = 8;
         }
         else if (highScore == 32)
         {
             int a = Random.Range(0, 100);
-            if (a <= 50) nextNum = 2;
-            else if (a > 50 && a <= 87) nextNum = 4;
-            else if (a > 87 && a <= 97) nextNum = 8;
-            else nextNum = 16;
+            if (a <= 50) result = 2;
+            else if (a > 50 && a <= 87) result = 4;
+            else if (a > 87 && a <= 97) result = 8;
+            else result = 16;
         }
         else if (highScore == 64)
         {
             int a = Random.Range(0, 100);
-            if (a <= 45) nextNum = 2;
-            else if (a > 45 && a <= 80) nextNum = 4;
-            else if (a > 80 && a <= 94) nextNum = 8;
-            else nextNum = 16;
+            if (a <= 45) result = 2;
+            else if (a > 45 && a <= 80) result = 4;
+            else if (a > 80 && a <= 94) result = 8;
+            else result = 16;
         }
         else if (highScore == 128)
         {
             int a = Random.Range(0, 100);
-            if (a <= 40) nextNum = 2;
-            else if (a > 40 && a <= 75) nextNum = 4;
-            else if (a > 75 && a <= 91) nextNum = 8;
-            else if (a > 91 && a <= 98) nextNum = 16;
-            else nextNum = 32;
+            if (a <= 40) result = 2;
+            else if (a > 40 && a <= 75) result = 4;
+            else if (a > 75 && a <= 91) result = 8;
+            else if (a > 91 && a <= 98) result = 16;
+            else result = 32;
         }
         else if (highScore == 256)
         {
             int a = Random.Range(0, 100);
-            if (a <= 35) nextNum = 2;
-            else if (a > 35 && a <= 62) nextNum = 4;
-            else if (a > 62 && a <= 85) nextNum = 8;
-            else if (a > 85 && a <= 96) nextNum = 16;
-            else nextNum = 32;
+            if (a <= 35) result = 2;
+            else if (a > 35 && a <= 62) result = 4;
+            else if (a > 62 && a <= 85) result = 8;
+            else if (a > 85 && a <= 96) result = 16;
+            else result = 32;
         }
         else if (highScore > 256)
         {
             int a = Random.Range(0, 100);
-            if (a <= 40) nextNum = 2;
-            else if (a > 40 && a <= 62) nextNum = 4;
-            else if (a > 62 && a <= 79) nextNum = 8;
-            else if (a > 79 && a <= 92) nextNum = 16;
-            else nextNum = 32;
+            if (a <= 40) result = 2;
+            else if (a > 40 && a <= 62) result = 4;
+            else if (a > 62 && a <= 79) result = 8;
+            else if (a > 79 && a <= 92) result = 16;
+            else result = 32;
         }
+
+        return result;
+    }
+
+    // ★ 다음 숫자들을 시프트
+    void ShiftNextNums()
+    {
+        nowNum = nextNum;        // nextNum이 nowNum으로
+        nextNum = nextNum2;      // nextNum2가 nextNum으로
+        nextNum2 = GenerateNextNum(); // 새로운 nextNum2 생성
     }
 
     void ToggleEraseMode()
@@ -283,8 +298,8 @@ public class GameManager : MonoBehaviour
 
             FindSameNum(clickedPos);
 
-            nowNum = nextNum;
-            SetNextNum();
+            // ★ 숫자를 시프트 (nowNum ← nextNum ← nextNum2 ← 새로생성)
+            ShiftNextNums();
 
             UpdateItemButtons();
 
@@ -301,31 +316,25 @@ public class GameManager : MonoBehaviour
         numBtns[index].UpdateBtnImage();
     }
 
-    // ★ 수정된 SaveGameState - 올바른 히스토리 제한
     void SaveGameState()
     {
-        GameState state = new GameState(numSet, nowScore, highScore, nowNum, nextNum, eraseCount, gridSize);
+        GameState state = new GameState(numSet, nowScore, highScore, nowNum, nextNum, nextNum2, eraseCount, gridSize);
         actionHistory.Push(state);
 
-        Debug.Log($"[저장] Score:{nowScore}, nowNum:{nowNum}, nextNum:{nextNum}, Stack:{actionHistory.Count}");
 
-        // ★ 히스토리가 최대 크기를 초과하면 가장 오래된 것 제거
         if (actionHistory.Count > MAX_HISTORY_SIZE)
         {
-            // Stack을 배열로 변환 (인덱스 0이 최신)
             var tempArray = actionHistory.ToArray();
             actionHistory.Clear();
 
-            // 최신 MAX_HISTORY_SIZE개만 다시 추가 (역순으로 Push)
             for (int i = MAX_HISTORY_SIZE - 1; i >= 0; i--)
             {
                 actionHistory.Push(tempArray[i]);
             }
-
-            Debug.Log($"[히스토리 정리] {MAX_HISTORY_SIZE}개로 제한됨");
         }
     }
 
+    // ★ 복원 시 nextNum2도 복원
     void RestoreLastAction()
     {
         if (restoreCount <= 0)
@@ -355,9 +364,10 @@ public class GameManager : MonoBehaviour
         highScore = lastState.highScore;
         nowNum = lastState.nowNum;
         nextNum = lastState.nextNum;
+        nextNum2 = lastState.nextNum2; // ★ 복원
         eraseCount = lastState.eraseCount;
 
-        Debug.Log($"[복원] Score:{nowScore}, nowNum:{nowNum}, nextNum:{nextNum}, Stack:{actionHistory.Count}");
+        Debug.Log($"[복원] Score:{nowScore}, nowNum:{nowNum}, nextNum:{nextNum}, nextNum2:{nextNum2}, Stack:{actionHistory.Count}");
 
         for (int i = 0; i < totalCells; i++)
         {
@@ -488,5 +498,21 @@ public class GameManager : MonoBehaviour
             PlayerPrefs.SetInt(highScoreKey, nowScore);
         }
         uiManager.finalScoreTxt.text = nowScore.ToString();
+    }
+
+    public int GetSpriteIndex(int number)
+    {
+        switch (number)
+        {
+            case 2: return 1;
+            case 4: return 2;
+            case 8: return 3;
+            case 16: return 4;
+            case 32: return 5;
+            case 64: return 6;
+            case 128: return 7;
+            case 256: return 8;
+            default: return 0;
+        }
     }
 }
