@@ -18,12 +18,17 @@ public class SettingPanel : MonoBehaviour
 
     void Awake()
     {
-        closeBtn.onClick.AddListener(CloseOnClick);
-        retryBtn.onClick.AddListener(ResumeOnClick);
-        toLobbyBtn.onClick.AddListener(ToLobbyOnClick);
+        if (closeBtn != null)
+            closeBtn.onClick.AddListener(CloseOnClick);
+        if (retryBtn != null)
+            retryBtn.onClick.AddListener(ResumeOnClick);
+        if (toLobbyBtn != null)
+            toLobbyBtn.onClick.AddListener(ToLobbyOnClick);
 
-        soundBtn.onClick.AddListener(SoundOnClick);
-        musicBtn.onClick.AddListener(MusicOnClick);
+        if (soundBtn != null)
+            soundBtn.onClick.AddListener(SoundOnClick);
+        if (musicBtn != null)
+            musicBtn.onClick.AddListener(MusicOnClick);
     }
 
     void Start()

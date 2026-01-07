@@ -23,7 +23,7 @@ public class GameManager : MonoBehaviour, INumberProvider
     [HideInInspector] public int nowNum { get; private set; }
     [HideInInspector] public int nextNum { get; private set; }
     [HideInInspector] public int nextNum2 { get; private set; }
-    int nowScore = 2;
+    int nowScore = 0;
     int highScore = 8;
 
     int[] numSet;
@@ -49,6 +49,8 @@ public class GameManager : MonoBehaviour, INumberProvider
     [SerializeField] GameOverPanel gameOverPanel;
     private const int MAX_HISTORY_SIZE = 20;
 
+    // 콤보 시스템 변수
+    private int comboCount = 0;
 
     private struct GameState
     {
@@ -120,6 +122,8 @@ public class GameManager : MonoBehaviour, INumberProvider
 
     void InitGame()
     {
+        nowScore = 0;
+
         for (int a = 0; a < totalCells; a++)
         {
             numBtns[a].SetNumText(0);
@@ -131,12 +135,15 @@ public class GameManager : MonoBehaviour, INumberProvider
         for (int a = 0; a < 4; a++)
         {
             int ranIndex = Random.Range(0, totalCells);
-            while (numSet[ranIndex] != 0)
+            int val_nul = Random.Range(0, 8);
+            int value = RanNumVal[val_nul];
+
+            while (numSet[ranIndex] != 0 || WouldCreateThreeInARow(ranIndex, value))
             {
                 ranIndex = Random.Range(0, totalCells);
             }
-            int val_nul = Random.Range(0, 8);
-            SetNum(ranIndex, RanNumVal[val_nul]);
+
+            SetNum(ranIndex, value);
         }
 
         nowNum = 2;
@@ -149,6 +156,53 @@ public class GameManager : MonoBehaviour, INumberProvider
             numBtns[i].GetComponentInChildren<Button>().onClick.AddListener(() => BtnOnClicked(index));
         }
         uiManager.UpdateUI();
+    }
+
+    // 해당 위치에 값을 배치했을 때 3개가 연달아 나오는지 체크
+    bool WouldCreateThreeInARow(int index, int value)
+    {
+        int row = index / gridSize;
+        int col = index % gridSize;
+
+        int horizontalCount = 1;
+        if (col > 0 && numSet[index - 1] == value)
+        {
+            horizontalCount++;
+            if (col > 1 && numSet[index - 2] == value)
+                horizontalCount++;
+        }
+        if (col < gridSize - 1 && numSet[index + 1] == value)
+        {
+            horizontalCount++;
+            if (col < gridSize - 2 && numSet[index + 2] == value)
+                horizontalCount++;
+        }
+        if (col > 0 && col < gridSize - 1 && numSet[index - 1] == value && numSet[index + 1] == value)
+            horizontalCount = 3;
+
+        if (horizontalCount >= 3)
+            return true;
+
+        int verticalCount = 1;
+        if (row > 0 && numSet[index - gridSize] == value)
+        {
+            verticalCount++;
+            if (row > 1 && numSet[index - gridSize * 2] == value)
+                verticalCount++;
+        }
+        if (row < gridSize - 1 && numSet[index + gridSize] == value)
+        {
+            verticalCount++;
+            if (row < gridSize - 2 && numSet[index + gridSize * 2] == value)
+                verticalCount++;
+        }
+        if (row > 0 && row < gridSize - 1 && numSet[index - gridSize] == value && numSet[index + gridSize] == value)
+            verticalCount = 3;
+
+        if (verticalCount >= 3)
+            return true;
+
+        return false;
     }
 
     void UpdateInfo()
@@ -275,6 +329,30 @@ public class GameManager : MonoBehaviour, INumberProvider
         }
     }
 
+    float GetTileCountBonus(int tileCount)
+    {
+        if (tileCount >= 5) return 2f;
+        if (tileCount == 4) return 1.6f;
+        if (tileCount == 3) return 1.3f;
+        return 1f; // 2개
+    }
+
+    float GetComboMultiplier(int combo)
+    {
+        if (combo >= 4) return 4f;
+        if (combo == 3) return 2f;
+        if (combo == 2) return 1.5f;
+        return 1f; // 1회
+    }
+
+    void AddScore(int mergedNumber, int comboMultiplier, int tileCount)
+    {
+        float comboBonus = GetComboMultiplier(comboMultiplier);
+        float tileBonus = GetTileCountBonus(tileCount);
+        int scoreToAdd = Mathf.CeilToInt(mergedNumber * comboBonus * tileBonus);
+        nowScore += scoreToAdd;
+    }
+
     public void BtnOnClicked(int index)
     {
         if (isAnimating) return;
@@ -316,6 +394,10 @@ public class GameManager : MonoBehaviour, INumberProvider
         if (numBtns[index].ReturnNum() == 0)
         {
             SaveGameState();
+
+            // 배치 점수 추가
+            nowScore += nowNum;
+            Debug.Log($"[배치 점수] {nowNum}점 추가");
 
             numBtns[index].SetNumText(nowNum);
             clickedPos = index;
@@ -467,6 +549,7 @@ public class GameManager : MonoBehaviour, INumberProvider
 
         if (sameCount >= 2)
         {
+            comboCount = 0; // 콤보 카운트 초기화
             yield return StartCoroutine(MergeSequence(pos));
         }
         else
@@ -474,9 +557,7 @@ public class GameManager : MonoBehaviour, INumberProvider
             if (highScore < nowNum)
             {
                 highScore = nowNum;
-                uiManager.nowScoreTxt.text = nowNum.ToString();
             }
-            nowScore += nowNum;
 
             ResetValue();
             clickedPos = 0;
@@ -490,11 +571,11 @@ public class GameManager : MonoBehaviour, INumberProvider
 
     IEnumerator MergeSequence(int pos)
     {
-        bool wasMerged = false;
-
         while (sameCount >= 2)
         {
-            wasMerged = true;
+            comboCount++; // 콤보 증가
+
+            int currentTileCount = sameCount + 1; // 합쳐지는 타일 개수 (클릭한 칸 포함)
 
             Vector3 targetPos = numBtns[clickedPos].transform.position;
 
@@ -523,6 +604,9 @@ public class GameManager : MonoBehaviour, INumberProvider
             numSet[clickedPos] = nowNum;
             numBtns[clickedPos].SetNumText(nowNum);
 
+            // 합성 점수 추가 (기본 점수 × 콤보 배수 × 타일 개수 보너스)
+            AddScore(nowNum, comboCount, currentTileCount);
+
             if (nowNum >= 16 && VFXManager.Instance != null)
             {
                 VFXManager.Instance.PlayCombineParticle(numBtns[clickedPos].transform, nowNum);
@@ -540,12 +624,11 @@ public class GameManager : MonoBehaviour, INumberProvider
 
             yield return new WaitForSeconds(combineDelayTime);
         }
+
         if (highScore < nowNum)
         {
             highScore = nowNum;
-            uiManager.nowScoreTxt.text = nowNum.ToString();
         }
-        nowScore += nowNum;
 
         ResetValue();
         clickedPos = 0;

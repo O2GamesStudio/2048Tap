@@ -53,7 +53,9 @@ public class LobbyLayoutManager : MonoBehaviour
         lastCanvasSize = canvasRect.rect.size;
         SetupAnchors();
         AdjustLayout();
+        UpdateLockPanels();
     }
+
     void SetupAnchors()
     {
         foreach (var chapter in chapters)
@@ -182,6 +184,37 @@ public class LobbyLayoutManager : MonoBehaviour
             float bottomY = backgroundYOffset - (backgroundSize / 2) - bottomTextDistanceFromBackground;
             highScoreSet.anchoredPosition = new Vector2(0, bottomY);
         }
+    }
+
+    void UpdateLockPanels()
+    {
+        for (int i = 0; i < chapters.Length; i++)
+        {
+            if (chapters[i].lockPanel != null)
+            {
+                bool isLocked = IsChapterLocked(i);
+                chapters[i].lockPanel.gameObject.SetActive(isLocked);
+            }
+        }
+    }
+
+    bool IsChapterLocked(int chapterIndex)
+    {
+        // 첫 번째 챕터(0)는 항상 unlock
+        if (chapterIndex == 0) return false;
+
+        // 이전 챕터의 최고 점수가 1000점 이상이어야 다음 챕터 unlock
+        int prevGridSize = (chapterIndex - 1 == 0) ? 4 : 5;
+        string prevHighScoreKey = $"HighScore_{prevGridSize}x{prevGridSize}";
+        int prevHighScore = PlayerPrefs.GetInt(prevHighScoreKey, 0);
+
+        // 이전 챕터에서 1000점 이상을 얻어야 unlock
+        return prevHighScore < 1000;
+    }
+
+    public void RefreshLockPanels()
+    {
+        UpdateLockPanels();
     }
 
     void OnRectTransformDimensionsChange()

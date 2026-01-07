@@ -10,6 +10,7 @@ public class LobbyManager : MonoBehaviour
     [Header("Button UI")]
     [SerializeField] Button gameStartBtn;
     [SerializeField] Button preChapterBtn, nextChapterBtn;
+    [SerializeField] Button settingBtn;
 
     [Header("Image UI")]
     [SerializeField] Image[] chapterImages;
@@ -19,6 +20,9 @@ public class LobbyManager : MonoBehaviour
     [Header("Text UI")]
     [SerializeField] TextMeshProUGUI chapterText;
     [SerializeField] TextMeshProUGUI highScoreText;
+
+    [Header("Layout Manager")]
+    [SerializeField] LobbyLayoutManager layoutManager;
 
     [Header("Animation Settings")]
     [SerializeField] float slideDistance = 1000f;
@@ -30,8 +34,8 @@ public class LobbyManager : MonoBehaviour
     [SerializeField] Ease scaleEase = Ease.InOutSine;
 
     int chapterNum = 0;
+    [SerializeField] GameObject settingPanel;
     [SerializeField] int maxChapterNum = 1;
-
     bool isAnimating = false;
 
     void Awake()
@@ -42,15 +46,27 @@ public class LobbyManager : MonoBehaviour
         gameStartBtn.onClick.AddListener(() => StartOnClick());
         preChapterBtn.onClick.AddListener(() => ChapterMoveOnClick(-1));
         nextChapterBtn.onClick.AddListener(() => ChapterMoveOnClick(1));
+        settingBtn.onClick.AddListener(SettingOnClick);
 
         InitializeChapterPositions();
     }
     void Start()
     {
         SoundManager.Instance.PlayBGM();
+
         UpdateHighScoreUI(chapterNum);
         UpdateButtonStates();
         UpdateStartButton();
+
+        if (layoutManager != null)
+        {
+            layoutManager.RefreshLockPanels();
+        }
+    }
+    void SettingOnClick()
+    {
+        settingPanel.SetActive(true);
+        SoundManager.Instance.PlayUIBtnClickSFX();
     }
 
     void InitializeChapterPositions()
@@ -110,6 +126,11 @@ public class LobbyManager : MonoBehaviour
             UpdateButtonStates();
             UpdateStartButton();
 
+            if (layoutManager != null)
+            {
+                layoutManager.RefreshLockPanels();
+            }
+
             SlideChapters(oldChapterNum, chapterNum);
         }
         else if (dir == 1) // 다음 챕터로 이동
@@ -126,6 +147,11 @@ public class LobbyManager : MonoBehaviour
             UpdateHighScoreUI(chapterNum);
             UpdateButtonStates();
             UpdateStartButton();
+
+            if (layoutManager != null)
+            {
+                layoutManager.RefreshLockPanels();
+            }
 
             SlideChapters(oldChapterNum, chapterNum);
         }
@@ -193,16 +219,13 @@ public class LobbyManager : MonoBehaviour
 
     bool IsChapterLocked(int chapterNum)
     {
-        // 첫 번째 챕터(0)는 항상 unlock
         if (chapterNum == 0) return false;
 
-        // 이전 챕터의 최고 점수가 있어야 다음 챕터 unlock
         int prevGridSize = (chapterNum - 1 == 0) ? 4 : 5;
         string prevHighScoreKey = $"HighScore_{prevGridSize}x{prevGridSize}";
         int prevHighScore = PlayerPrefs.GetInt(prevHighScoreKey, 0);
 
-        // 이전 챕터에서 점수를 얻은 적이 있으면 unlock
-        return prevHighScore == 0;
+        return prevHighScore < 2000;
     }
 
     void UpdateStartButton()
