@@ -7,20 +7,11 @@ public class VFXManager : MonoBehaviour
     public static VFXManager Instance { get; private set; }
 
     [Header("Particle Settings")]
-    [SerializeField] ParticleSystem combineParticlePrefab;
+    [SerializeField] ParticleSystem[] combineParticlePrefabs;
     [SerializeField] int initialPoolSize = 5;
     [SerializeField] int maxPoolSize = 10;
 
-    [Header("Particle Colors by Number")]
-    [SerializeField] Color color16 = new Color(1f, 0.58f, 0.38f);  // #F59563
-    [SerializeField] Color color32 = new Color(0.96f, 0.48f, 0.37f); // #F67B5F
-    [SerializeField] Color color64 = new Color(0.96f, 0.37f, 0.23f); // #F65E3B
-    [SerializeField] Color color128 = new Color(0.93f, 0.81f, 0.44f); // #EDCF71
-    [SerializeField] Color color256 = new Color(0.93f, 0.8f, 0.38f);  // #EDCC61
-    [SerializeField] Color colorDefault = new Color(1f, 0.84f, 0.0f); // 골드
-
-    // 파티클 풀
-    private Queue<ParticleSystem> particlePool = new Queue<ParticleSystem>();
+    private Dictionary<int, Queue<ParticleSystem>> particlePools = new Dictionary<int, Queue<ParticleSystem>>();
     private List<ParticleSystem> activeParticles = new List<ParticleSystem>();
 
     void Awake()
@@ -38,37 +29,57 @@ public class VFXManager : MonoBehaviour
 
     void InitializeVFXManager()
     {
-        if (combineParticlePrefab == null)
+        if (combineParticlePrefabs == null || combineParticlePrefabs.Length == 0)
         {
-            Debug.LogWarning("CombineParticlePrefab이 할당되지 않았습니다!");
+            Debug.LogWarning("CombineParticlePrefabs가 할당되지 않았습니다!");
             return;
         }
 
-        // 파티클 풀 초기화
-        for (int i = 0; i < initialPoolSize; i++)
+        for (int i = 0; i < combineParticlePrefabs.Length; i++)
         {
-            CreateNewParticle();
+            particlePools[i] = new Queue<ParticleSystem>();
+
+            for (int j = 0; j < initialPoolSize; j++)
+            {
+                CreateNewParticle(i);
+            }
         }
 
-        Debug.Log($"VFXManager 초기화 완료 - 파티클 풀 크기: {particlePool.Count}");
+        Debug.Log($"VFXManager 초기화 완료 - {combineParticlePrefabs.Length}개 타입의 파티클 풀 생성");
     }
 
-    ParticleSystem CreateNewParticle()
+    ParticleSystem CreateNewParticle(int prefabIndex)
     {
-        ParticleSystem particle = Instantiate(combineParticlePrefab, transform);
+        if (prefabIndex < 0 || prefabIndex >= combineParticlePrefabs.Length)
+        {
+            Debug.LogError($"잘못된 파티클 인덱스: {prefabIndex}");
+            return null;
+        }
+
+        ParticleSystem particle = Instantiate(combineParticlePrefabs[prefabIndex], transform);
         particle.gameObject.SetActive(false);
-        particlePool.Enqueue(particle);
+        particlePools[prefabIndex].Enqueue(particle);
         return particle;
     }
 
-    ParticleSystem GetParticle()
+    ParticleSystem GetParticle(int prefabIndex)
     {
+        if (prefabIndex < 0 || prefabIndex >= combineParticlePrefabs.Length)
+        {
+            Debug.LogError($"잘못된 파티클 인덱스: {prefabIndex}");
+            return null;
+        }
+
+        if (!particlePools.ContainsKey(prefabIndex))
+        {
+            particlePools[prefabIndex] = new Queue<ParticleSystem>();
+        }
+
         ParticleSystem particle;
 
-        // 풀에서 사용 가능한 파티클 찾기
-        while (particlePool.Count > 0)
+        while (particlePools[prefabIndex].Count > 0)
         {
-            particle = particlePool.Dequeue();
+            particle = particlePools[prefabIndex].Dequeue();
             if (particle != null && !particle.isPlaying)
             {
                 activeParticles.Add(particle);
@@ -76,77 +87,62 @@ public class VFXManager : MonoBehaviour
             }
         }
 
-        // 풀에 없으면 새로 생성 (최대 크기 체크)
         if (activeParticles.Count < maxPoolSize)
         {
-            particle = CreateNewParticle();
-            particlePool.Dequeue();
+            particle = CreateNewParticle(prefabIndex);
+            particlePools[prefabIndex].Dequeue();
             activeParticles.Add(particle);
-            Debug.Log($"새로운 파티클 생성됨 - 현재 활성: {activeParticles.Count}");
             return particle;
         }
 
-        // 최대 크기 도달 시 가장 오래된 파티클 재사용
         Debug.LogWarning("파티클 풀 최대 크기 도달 - 가장 오래된 파티클 재사용");
         particle = activeParticles[0];
         particle.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
         return particle;
     }
 
-    void ReturnParticle(ParticleSystem particle)
+    void ReturnParticle(ParticleSystem particle, int prefabIndex)
     {
         if (particle == null) return;
 
         particle.gameObject.SetActive(false);
         activeParticles.Remove(particle);
 
-        if (!particlePool.Contains(particle))
+        if (particlePools.ContainsKey(prefabIndex) && !particlePools[prefabIndex].Contains(particle))
         {
-            particlePool.Enqueue(particle);
+            particlePools[prefabIndex].Enqueue(particle);
         }
     }
 
-    // 숫자에 따른 색상 반환
-    Color GetColorByNumber(int number)
+    int GetPrefabIndexByNumber(int number)
     {
         switch (number)
         {
-            case 16: return color16;
-            case 32: return color32;
-            case 64: return color64;
-            case 128: return color128;
-            case 256: return color256;
-            default: return colorDefault;
+            case 16: return 0;
+            case 32: return 1;
+            case 64: return 2;
+            case 128: return 3;
+            case 256: return 4;
+            default: return 0;
         }
     }
 
-    public void PlayCombineParticle(Vector3 position)
+    public void PlayCombineParticle(Vector3 position, int number)
     {
-        PlayCombineParticle(position, colorDefault);
-    }
+        int prefabIndex = GetPrefabIndexByNumber(number);
 
-    public void PlayCombineParticle(Vector3 position, Color color)
-    {
-        if (combineParticlePrefab == null) return;
+        if (combineParticlePrefabs == null || combineParticlePrefabs.Length == 0) return;
+        if (prefabIndex >= combineParticlePrefabs.Length) prefabIndex = combineParticlePrefabs.Length - 1;
 
-        ParticleSystem particle = GetParticle();
+        ParticleSystem particle = GetParticle(prefabIndex);
         if (particle == null) return;
 
         particle.transform.position = new Vector3(position.x, position.y, 0f);
         particle.gameObject.SetActive(true);
 
-        var main = particle.main;
-        main.startColor = color;
-
         particle.Play();
 
-        StartCoroutine(ReturnToPoolAfterPlay(particle));
-    }
-
-    public void PlayCombineParticle(Vector3 position, int number)
-    {
-        Color color = GetColorByNumber(number);
-        PlayCombineParticle(position, color);
+        StartCoroutine(ReturnToPoolAfterPlay(particle, prefabIndex));
     }
 
     public void PlayCombineParticle(Transform target, int number)
@@ -154,14 +150,12 @@ public class VFXManager : MonoBehaviour
         PlayCombineParticle(target.position, number);
     }
 
-    IEnumerator ReturnToPoolAfterPlay(ParticleSystem particle)
+    IEnumerator ReturnToPoolAfterPlay(ParticleSystem particle, int prefabIndex)
     {
-        // 파티클 재생 시간만큼 대기
         yield return new WaitForSeconds(particle.main.duration + particle.main.startLifetime.constantMax);
-        ReturnParticle(particle);
+        ReturnParticle(particle, prefabIndex);
     }
 
-    // 모든 파티클 정지
     public void StopAllParticles()
     {
         foreach (ParticleSystem particle in activeParticles)
@@ -172,16 +166,17 @@ public class VFXManager : MonoBehaviour
             }
         }
 
-        while (activeParticles.Count > 0)
-        {
-            ReturnParticle(activeParticles[0]);
-        }
+        activeParticles.Clear();
     }
 
-    // 풀 상태 확인 (디버깅용)
     public void PrintPoolStatus()
     {
-        Debug.Log($"파티클 풀 상태 - 사용 가능: {particlePool.Count}, 활성: {activeParticles.Count}");
+        int totalAvailable = 0;
+        foreach (var pool in particlePools.Values)
+        {
+            totalAvailable += pool.Count;
+        }
+        Debug.Log($"파티클 풀 상태 - 사용 가능: {totalAvailable}, 활성: {activeParticles.Count}");
     }
 
     void OnDestroy()

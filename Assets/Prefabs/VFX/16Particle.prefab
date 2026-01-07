@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 1044308172475097693}
   - component: {fileID: 1790881690377155585}
   m_Layer: 6
-  m_Name: Combine_Particle01
+  m_Name: 16Particle
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -268,7 +268,7 @@ ParticleSystem:
       serializedVersion: 2
       minMaxState: 0
       minColor: {r: 1, g: 1, b: 1, a: 1}
-      maxColor: {r: 1, g: 0.58, b: 0.38, a: 1}
+      maxColor: {r: 0.9803922, g: 0.8196079, b: 0.32156864, a: 1}
       maxGradient:
         serializedVersion: 2
         key0: {r: 1, g: 1, b: 1, a: 1}
