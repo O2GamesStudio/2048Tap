@@ -44,6 +44,12 @@ public class GridLayoutManager : MonoBehaviour
         // ★ 버튼들의 자식 이미지 크기 조정
         AdjustChildImages(cellSize);
 
+        // Canvas 강제 업데이트
+        Canvas.ForceUpdateCanvases();
+
+        // ★★ NumBtn의 numImage 위치 업데이트 (한 프레임만 대기)
+        StartCoroutine(UpdateNumImagePositions());
+
         Debug.Log($"Screen Width: {screenWidth}, Background Size: {backgroundSize}, Cell Size: {cellSize}, Padding: {padding}");
     }
 
@@ -64,6 +70,23 @@ public class GridLayoutManager : MonoBehaviour
                     // 자식이 부모 중앙에 위치하도록 설정 (선택사항)
                     childRect.anchoredPosition = Vector2.zero;
                 }
+            }
+        }
+    }
+
+    // ★★ NumBtn의 numImage들이 numImageLayer로 이동한 후 위치를 업데이트
+    System.Collections.IEnumerator UpdateNumImagePositions()
+    {
+        // 한 프레임만 대기 (훨씬 빠름)
+        yield return null;
+
+        // 모든 NumBtn의 위치 업데이트
+        foreach (Transform button in gridLayoutGroup.transform)
+        {
+            NumBtn numBtn = button.GetComponent<NumBtn>();
+            if (numBtn != null)
+            {
+                numBtn.UpdateImagePosition();
             }
         }
     }

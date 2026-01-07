@@ -2,6 +2,7 @@ using DG.Tweening;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using System.Collections;
 
 public class NumBtn : MonoBehaviour
 {
@@ -10,17 +11,19 @@ public class NumBtn : MonoBehaviour
     int num = 0;
     INumberProvider numberProvider;
 
-    // 모든 NumBtn의 numImage를 추적하기 위한 static 리스트
     private static Transform numImageLayer;
+
+    private RectTransform originalParent;
+    private RectTransform numRect;
+    private Vector2 originalSizeDelta;
 
     void Awake()
     {
-        bgImage = GetComponent<Image>();
-
         Image[] images = GetComponentsInChildren<Image>();
         if (images.Length >= 2)
         {
-            numImage = images[1];
+            bgImage = images[1];
+            numImage = images[2];
         }
         else
         {
@@ -31,35 +34,91 @@ public class NumBtn : MonoBehaviour
             numberProvider = GameManager.Instance;
         else if (TutorialManager.Instance != null)
             numberProvider = TutorialManager.Instance;
+
+        if (numImage != null)
+        {
+            numRect = numImage.GetComponent<RectTransform>();
+            originalParent = numImage.transform.parent as RectTransform;
+            originalSizeDelta = numRect.sizeDelta;
+        }
     }
 
     void Start()
     {
-        // 첫 실행 시 numImage 레이어 생성
-        if (numImageLayer == null)
+        numImageLayer = UIManager.Instance.numImageLayer.transform;
+
+        if (numImage != null && numImageLayer != null)
         {
-            GameObject layerObj = new GameObject("NumImageLayer");
-            numImageLayer = layerObj.transform;
-            numImageLayer.SetParent(transform.parent.parent); // Grid의 부모로 설정
-
-            RectTransform layerRect = layerObj.AddComponent<RectTransform>();
-            layerRect.anchorMin = Vector2.zero;
-            layerRect.anchorMax = Vector2.one;
-            layerRect.sizeDelta = Vector2.zero;
-            layerRect.anchoredPosition = Vector2.zero;
-
-            // 맨 위로 이동
-            numImageLayer.SetAsLastSibling();
+            MoveToLayerImmediate();
         }
 
-        // numImage를 numImageLayer로 이동
-        if (numImage != null)
+        if (numImageLayer != null)
         {
-            RectTransform numRect = numImage.GetComponent<RectTransform>();
-            Vector3 worldPos = numRect.position;
+            numImageLayer.SetAsLastSibling();
+        }
+    }
 
-            numRect.SetParent(numImageLayer, true);
-            numRect.position = worldPos; // 위치 유지
+    void MoveToLayerImmediate()
+    {
+        Canvas.ForceUpdateCanvases();
+
+        Vector3 worldPos = numRect.position;
+        Vector3 worldScale = numRect.lossyScale;
+        Vector2 sizeDelta = numRect.sizeDelta;
+
+        numRect.SetParent(numImageLayer, false);
+
+        numRect.sizeDelta = sizeDelta;
+        numRect.position = worldPos;
+
+        Vector3 localPos = numRect.localPosition;
+        numRect.localPosition = new Vector3(localPos.x, localPos.y, -1f);
+
+        if (numImageLayer.lossyScale != Vector3.zero)
+        {
+            Vector3 localScaleAdjustment = new Vector3(
+                worldScale.x / numImageLayer.lossyScale.x,
+                worldScale.y / numImageLayer.lossyScale.y,
+                worldScale.z / numImageLayer.lossyScale.z
+            );
+            numRect.localScale = localScaleAdjustment;
+        }
+
+        StartCoroutine(VerifyPositionNextFrame());
+    }
+
+    IEnumerator VerifyPositionNextFrame()
+    {
+        yield return null;
+
+        if (originalParent != null)
+        {
+            numRect.position = originalParent.position;
+
+            Vector3 localPos = numRect.localPosition;
+            numRect.localPosition = new Vector3(localPos.x, localPos.y, -1f);
+        }
+    }
+
+    public void UpdateImagePosition()
+    {
+        if (numImage == null || originalParent == null) return;
+
+        numRect.sizeDelta = originalParent.sizeDelta;
+        numRect.position = originalParent.position;
+
+        Vector3 localPos = numRect.localPosition;
+        numRect.localPosition = new Vector3(localPos.x, localPos.y, -1f);
+
+        if (numImageLayer != null && numImageLayer.lossyScale != Vector3.zero)
+        {
+            Vector3 worldScale = originalParent.lossyScale;
+            Vector3 localScaleAdjustment = new Vector3(
+                worldScale.x / numImageLayer.lossyScale.x,
+                worldScale.y / numImageLayer.lossyScale.y,
+                worldScale.z / numImageLayer.lossyScale.z
+            );
+            numRect.localScale = localScaleAdjustment;
         }
     }
 
@@ -128,26 +187,34 @@ public class NumBtn : MonoBehaviour
     {
         if (numImage == null) return;
 
-        RectTransform numRect = numImage.GetComponent<RectTransform>();
         Vector3 startPos = numRect.position;
 
-        // 애니메이션 중 살짝 뒤로 (형제 순서)
         numRect.SetAsFirstSibling();
 
-        numRect.DOMove(targetWorldPos, duration)
-            .SetEase(Ease.InOutQuad)
-            .OnComplete(() =>
+        Vector3 localPos = numRect.localPosition;
+        numRect.localPosition = new Vector3(localPos.x, localPos.y, -2f);
+
+        Sequence moveSequence = DOTween.Sequence();
+        moveSequence.Append(numRect.DOMoveX(targetWorldPos.x, duration));
+        moveSequence.Join(numRect.DOMoveY(targetWorldPos.y, duration));
+        moveSequence.SetEase(Ease.InOutQuad);
+        moveSequence.OnComplete(() =>
+        {
+            if (originalParent != null)
             {
-                numRect.position = startPos;
+                numRect.position = originalParent.position;
 
-                // 원래 순서로 복원
-                numRect.SetAsLastSibling();
+                Vector3 finalPos = numRect.localPosition;
+                numRect.localPosition = new Vector3(finalPos.x, finalPos.y, -1f);
+            }
 
-                num = 0;
-                UpdateBtnImage();
+            numRect.SetAsLastSibling();
 
-                onComplete?.Invoke();
-            });
+            num = 0;
+            UpdateBtnImage();
+
+            onComplete?.Invoke();
+        });
     }
 
     public void EraseAnimationToZero(float duration = 0.2f, System.Action onComplete = null)

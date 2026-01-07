@@ -23,6 +23,7 @@ public class UIManager : MonoBehaviour
     [SerializeField] Button settingBtn;
 
     [SerializeField] GameObject settingPanel;
+    public GameObject numImageLayer;
 
     void Awake()
     {
