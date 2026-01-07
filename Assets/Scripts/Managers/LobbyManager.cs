@@ -13,9 +13,12 @@ public class LobbyManager : MonoBehaviour
 
     [Header("Image UI")]
     [SerializeField] Image[] chapterImages;
+    [SerializeField] Image startBtnImage;
+    [SerializeField] Sprite[] startSprites;
 
     [Header("Text UI")]
     [SerializeField] TextMeshProUGUI chapterText;
+    [SerializeField] TextMeshProUGUI highScoreText;
 
     [Header("Animation Settings")]
     [SerializeField] float slideDistance = 1000f;
@@ -33,6 +36,9 @@ public class LobbyManager : MonoBehaviour
 
     void Awake()
     {
+        // maxChapterNum은 마지막 챕터의 인덱스여야 함 (배열 길이 - 1)
+        maxChapterNum = chapterImages.Length - 1;
+
         gameStartBtn.onClick.AddListener(() => StartOnClick());
         preChapterBtn.onClick.AddListener(() => ChapterMoveOnClick(-1));
         nextChapterBtn.onClick.AddListener(() => ChapterMoveOnClick(1));
@@ -42,6 +48,9 @@ public class LobbyManager : MonoBehaviour
     void Start()
     {
         SoundManager.Instance.PlayBGM();
+        UpdateHighScoreUI(chapterNum);
+        UpdateButtonStates();
+        UpdateStartButton();
     }
 
     void InitializeChapterPositions()
@@ -86,26 +95,52 @@ public class LobbyManager : MonoBehaviour
     {
         if (isAnimating) return;
 
-        SoundManager.Instance.PlayUIBtnClickSFX();
-        StartCoroutine(BtnClickAnim(dir));
         if (dir == -1) //이전 챕터로 이동
         {
-            if (chapterNum == 0) return;
-            SlideChapters(chapterNum, chapterNum - 1);
+            if (chapterNum <= 0) return;
+
+            SoundManager.Instance.PlayUIBtnClickSFX();
+            StartCoroutine(BtnClickAnim(dir));
+
+            int oldChapterNum = chapterNum;
             chapterNum--;
+
             UpdateChapterTextUI(chapterNum);
+            UpdateHighScoreUI(chapterNum);
+            UpdateButtonStates();
+            UpdateStartButton();
+
+            SlideChapters(oldChapterNum, chapterNum);
         }
         else if (dir == 1) // 다음 챕터로 이동
         {
-            if (chapterNum == maxChapterNum) return;
-            SlideChapters(chapterNum, chapterNum + 1);
+            if (chapterNum >= maxChapterNum) return;
+
+            SoundManager.Instance.PlayUIBtnClickSFX();
+            StartCoroutine(BtnClickAnim(dir));
+
+            int oldChapterNum = chapterNum;
             chapterNum++;
+
             UpdateChapterTextUI(chapterNum);
+            UpdateHighScoreUI(chapterNum);
+            UpdateButtonStates();
+            UpdateStartButton();
+
+            SlideChapters(oldChapterNum, chapterNum);
         }
     }
 
     void SlideChapters(int fromIndex, int toIndex)
     {
+        // 배열 범위 체크
+        if (fromIndex < 0 || fromIndex >= chapterImages.Length ||
+            toIndex < 0 || toIndex >= chapterImages.Length)
+        {
+            Debug.LogError($"Invalid chapter index: fromIndex={fromIndex}, toIndex={toIndex}, arrayLength={chapterImages.Length}");
+            return;
+        }
+
         isAnimating = true;
 
         RectTransform fromRect = chapterImages[fromIndex].GetComponent<RectTransform>();
@@ -144,8 +179,73 @@ public class LobbyManager : MonoBehaviour
         else if (chapterNum == 1) chapterText.text = "5x5";
     }
 
+    void UpdateHighScoreUI(int chapterNum)
+    {
+        int gridSize = (chapterNum == 0) ? 4 : 5;
+        string highScoreKey = $"HighScore_{gridSize}x{gridSize}";
+        int highScore = PlayerPrefs.GetInt(highScoreKey, 0);
+
+        if (highScoreText != null)
+        {
+            highScoreText.text = highScore.ToString();
+        }
+    }
+
+    bool IsChapterLocked(int chapterNum)
+    {
+        // 첫 번째 챕터(0)는 항상 unlock
+        if (chapterNum == 0) return false;
+
+        // 이전 챕터의 최고 점수가 있어야 다음 챕터 unlock
+        int prevGridSize = (chapterNum - 1 == 0) ? 4 : 5;
+        string prevHighScoreKey = $"HighScore_{prevGridSize}x{prevGridSize}";
+        int prevHighScore = PlayerPrefs.GetInt(prevHighScoreKey, 0);
+
+        // 이전 챕터에서 점수를 얻은 적이 있으면 unlock
+        return prevHighScore == 0;
+    }
+
+    void UpdateStartButton()
+    {
+        bool isLocked = IsChapterLocked(chapterNum);
+
+        if (startBtnImage != null && startSprites != null && startSprites.Length >= 2)
+        {
+            // 잠금 상태에 따라 스프라이트 변경 (0: unlock, 1: lock)
+            startBtnImage.sprite = isLocked ? startSprites[1] : startSprites[0];
+        }
+
+        if (gameStartBtn != null)
+        {
+            // 잠긴 챕터는 버튼 비활성화
+            gameStartBtn.interactable = !isLocked;
+        }
+    }
+
+    void UpdateButtonStates()
+    {
+        // 이전 버튼 상태
+        if (preChapterBtn != null)
+        {
+            preChapterBtn.interactable = (chapterNum > 0);
+        }
+
+        // 다음 버튼 상태
+        if (nextChapterBtn != null)
+        {
+            nextChapterBtn.interactable = (chapterNum < maxChapterNum);
+        }
+    }
+
     void StartOnClick()
     {
+        // 잠긴 챕터는 시작 불가
+        if (IsChapterLocked(chapterNum))
+        {
+            Debug.Log("This chapter is locked!");
+            return;
+        }
+
         SoundManager.Instance.PlayUIBtnClickSFX();
         SceneManager.LoadScene(chapterNum + 1);
     }
