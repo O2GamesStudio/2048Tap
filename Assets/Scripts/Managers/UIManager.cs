@@ -28,6 +28,10 @@ public class UIManager : MonoBehaviour
 
     [Header("Buttons")]
     [SerializeField] Button settingBtn;
+    [SerializeField] Button eraseBtn;
+    [SerializeField] Button restoreBtn;
+    [SerializeField] Image eraseBtnImage;
+    Image restoreBtnImage;
 
     [SerializeField] GameObject settingPanel;
     public GameObject numImageLayer;
@@ -64,6 +68,9 @@ public class UIManager : MonoBehaviour
         nowNumOriginalScale = nowNumImage.transform.localScale;
         nextNum1OriginalScale = nextNumImage1.transform.localScale;
         nextNum2OriginalScale = nextNumImage2.transform.localScale;
+
+        eraseBtnImage = eraseBtn.GetComponent<Image>();
+        restoreBtnImage = restoreBtn.GetComponent<Image>();
     }
 
     public void UpdateUI()
@@ -144,13 +151,45 @@ public class UIManager : MonoBehaviour
         nowNumImage.color = new Color(1, 1, 1, 1);
     }
 
-    public void UpdateItemCount(int eraseCount, int restoreCount)
+    public void UpdateItemCount(int eraseCount, int restoreCount, int remainingEraseAds, int remainingRestoreAds)
     {
         if (eraseCountText != null)
             eraseCountText.text = eraseCount.ToString();
 
         if (restoreCountText != null)
             restoreCountText.text = restoreCount.ToString();
+
+        // Erase 버튼 처리
+        if (eraseBtn != null)
+        {
+            // 아이템이 있거나 광고를 볼 수 있으면 활성화
+            eraseBtn.interactable = eraseCount > 0 || remainingEraseAds > 0;
+        }
+
+        // Restore 버튼 처리
+        if (restoreBtn != null)
+        {
+            // 아이템이 있거나 광고를 볼 수 있으면 활성화
+            restoreBtn.interactable = restoreCount > 0 || remainingRestoreAds > 0;
+        }
+
+        // Erase 버튼 이미지 알파값 조정
+        if (eraseBtnImage != null)
+        {
+            Color color = eraseBtnImage.color;
+            // 아이템이 있으면 불투명(1.0), 없으면 반투명(0.3)
+            color.a = eraseCount > 0 ? 1f : 0.3f;
+            eraseBtnImage.color = color;
+        }
+
+        // Restore 버튼 이미지 알파값 조정
+        if (restoreBtnImage != null)
+        {
+            Color color = restoreBtnImage.color;
+            // 아이템이 있으면 불투명(1.0), 없으면 반투명(0.3)
+            color.a = restoreCount > 0 ? 1f : 0.3f;
+            restoreBtnImage.color = color;
+        }
     }
 
     public void UpdateAdCountUI(int eraseCount, int restoreCount, int remainingEraseAds, int remainingRestoreAds)

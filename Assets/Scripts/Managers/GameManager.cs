@@ -591,24 +591,22 @@ public class GameManager : MonoBehaviour, INumberProvider
 
     void UpdateItemButtons()
     {
+        if (uiManager != null)
+        {
+            uiManager.UpdateItemCount(eraseCount, restoreCount, GetRemainingEraseAds(), GetRemainingRestoreAds());
+            uiManager.UpdateAdCountUI(eraseCount, restoreCount, GetRemainingEraseAds(), GetRemainingRestoreAds());
+        }
+
+        // Restore 버튼은 히스토리가 있어야만 사용 가능 (추가 조건)
         if (restoreBtn != null)
         {
             bool hasRestoreItem = restoreCount > 0;
             bool canWatchRestoreAd = restoreAdWatchCount < MAX_AD_WATCH_PER_ITEM;
-            restoreBtn.interactable = actionHistory.Count > 0 && (hasRestoreItem || canWatchRestoreAd);
-        }
-
-        if (eraseBtn != null)
-        {
-            bool hasEraseItem = eraseCount > 0;
-            bool canWatchEraseAd = eraseAdWatchCount < MAX_AD_WATCH_PER_ITEM;
-            eraseBtn.interactable = hasEraseItem || canWatchEraseAd;
-        }
-
-        if (uiManager != null)
-        {
-            uiManager.UpdateItemCount(eraseCount, restoreCount);
-            uiManager.UpdateAdCountUI(eraseCount, restoreCount, GetRemainingEraseAds(), GetRemainingRestoreAds());
+            // 히스토리가 없으면 무조건 비활성화
+            if (actionHistory.Count == 0)
+            {
+                restoreBtn.interactable = false;
+            }
         }
     }
 
