@@ -21,10 +21,10 @@ public class UIManager : MonoBehaviour
     public TextMeshProUGUI highScoreTxt;
 
     [Header("Ad Count UI")]
-    [SerializeField] private GameObject eraseAdCountPanel;      // 지우기 광고 카운트 패널
-    [SerializeField] private TextMeshProUGUI eraseAdCountText;  // 지우기 광고 카운트 텍스트
-    [SerializeField] private GameObject restoreAdCountPanel;    // 복원 광고 카운트 패널
-    [SerializeField] private TextMeshProUGUI restoreAdCountText;// 복원 광고 카운트 텍스트
+    [SerializeField] private GameObject eraseAdCountPanel;
+    [SerializeField] private TextMeshProUGUI eraseAdCountText;
+    [SerializeField] private GameObject restoreAdCountPanel;
+    [SerializeField] private TextMeshProUGUI restoreAdCountText;
 
     [Header("Buttons")]
     [SerializeField] Button settingBtn;
@@ -32,6 +32,7 @@ public class UIManager : MonoBehaviour
     [SerializeField] Button restoreBtn;
     [SerializeField] Image eraseBtnImage;
     Image restoreBtnImage;
+    [SerializeField] Color eraseToggleColor;
 
     [SerializeField] GameObject settingPanel;
     public GameObject numImageLayer;
@@ -159,35 +160,27 @@ public class UIManager : MonoBehaviour
         if (restoreCountText != null)
             restoreCountText.text = restoreCount.ToString();
 
-        // Erase 버튼 처리
         if (eraseBtn != null)
         {
-            // 아이템이 있거나 광고를 볼 수 있으면 활성화
             eraseBtn.interactable = eraseCount > 0 || remainingEraseAds > 0;
         }
 
-        // Restore 버튼 처리
         if (restoreBtn != null)
         {
-            // 아이템이 있거나 광고를 볼 수 있으면 활성화
             restoreBtn.interactable = restoreCount > 0 || remainingRestoreAds > 0;
         }
 
-        // Erase 버튼 이미지 알파값 조정
         if (eraseBtnImage != null)
         {
             Color color = eraseBtnImage.color;
-            // 아이템이 있으면 불투명(1.0), 없으면 반투명(0.3)
-            color.a = eraseCount > 0 ? 1f : 0.3f;
+            color.a = eraseCount > 0 ? 1f : 0.2f;
             eraseBtnImage.color = color;
         }
 
-        // Restore 버튼 이미지 알파값 조정
         if (restoreBtnImage != null)
         {
             Color color = restoreBtnImage.color;
-            // 아이템이 있으면 불투명(1.0), 없으면 반투명(0.3)
-            color.a = restoreCount > 0 ? 1f : 0.3f;
+            color.a = restoreCount > 0 ? 1f : 0.2f;
             restoreBtnImage.color = color;
         }
     }
@@ -236,5 +229,13 @@ public class UIManager : MonoBehaviour
     {
         settingPanel.SetActive(true);
         SoundManager.Instance.PlayUIBtnClickSFX();
+    }
+
+    public void SetEraseModeVisual(bool isActive)
+    {
+        if (eraseBtnImage != null)
+        {
+            eraseBtnImage.color = isActive ? eraseToggleColor : Color.white;
+        }
     }
 }

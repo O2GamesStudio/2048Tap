@@ -331,18 +331,11 @@ public class GameManager : MonoBehaviour, INumberProvider
         }
 
         isEraseMode = !isEraseMode;
-        if (eraseBtn != null)
+
+        // UIManager를 통해 버튼 색상 변경
+        if (uiManager != null)
         {
-            ColorBlock colors = eraseBtn.colors;
-            if (isEraseMode)
-            {
-                colors.normalColor = new Color(1f, 0.6f, 0.6f);
-            }
-            else
-            {
-                colors.normalColor = Color.white;
-            }
-            eraseBtn.colors = colors;
+            uiManager.SetEraseModeVisual(isEraseMode);
         }
     }
 
@@ -435,11 +428,11 @@ public class GameManager : MonoBehaviour, INumberProvider
                 eraseCount--;
 
                 isEraseMode = false;
-                if (eraseBtn != null)
+
+                // UIManager를 통해 버튼 색상 원래대로 복원
+                if (uiManager != null)
                 {
-                    ColorBlock colors = eraseBtn.colors;
-                    colors.normalColor = Color.white;
-                    eraseBtn.colors = colors;
+                    uiManager.SetEraseModeVisual(false);
                 }
 
                 if (soundManager != null)
@@ -602,10 +595,17 @@ public class GameManager : MonoBehaviour, INumberProvider
         {
             bool hasRestoreItem = restoreCount > 0;
             bool canWatchRestoreAd = restoreAdWatchCount < MAX_AD_WATCH_PER_ITEM;
+            bool hasHistory = actionHistory.Count > 0;
+
             // 히스토리가 없으면 무조건 비활성화
-            if (actionHistory.Count == 0)
+            // 히스토리가 있으면 아이템이 있거나 광고를 볼 수 있을 때 활성화
+            if (!hasHistory)
             {
                 restoreBtn.interactable = false;
+            }
+            else
+            {
+                restoreBtn.interactable = hasRestoreItem || canWatchRestoreAd;
             }
         }
     }
