@@ -23,4 +23,5 @@
             <meta-data android:name="android.app.lib_name" android:value="game" />
         </activity>
     </application>
+    <uses-permission android:name="com.google.android.gms.permission.AD_ID" />
 </manifest>

@@ -38,6 +38,14 @@ public class GameManager : MonoBehaviour, INumberProvider
     [HideInInspector] public int eraseCount { get; private set; }
     [HideInInspector] public int restoreCount { get; private set; }
 
+    // 광고 시청 횟수 제한 (매 판마다)
+    private int eraseAdWatchCount = 0;
+    private int restoreAdWatchCount = 0;
+    private const int MAX_AD_WATCH_PER_ITEM = 3;
+
+    public int GetRemainingEraseAds() { return MAX_AD_WATCH_PER_ITEM - eraseAdWatchCount; }
+    public int GetRemainingRestoreAds() { return MAX_AD_WATCH_PER_ITEM - restoreAdWatchCount; }
+
     private bool isEraseMode = false;
     private Stack<GameState> actionHistory = new Stack<GameState>();
 
@@ -124,6 +132,10 @@ public class GameManager : MonoBehaviour, INumberProvider
     {
         nowScore = 0;
 
+        // 광고 시청 횟수 초기화
+        eraseAdWatchCount = 0;
+        restoreAdWatchCount = 0;
+
         for (int a = 0; a < totalCells; a++)
         {
             numBtns[a].SetNumText(0);
@@ -158,7 +170,6 @@ public class GameManager : MonoBehaviour, INumberProvider
         uiManager.UpdateUI();
     }
 
-    // 해당 위치에 값을 배치했을 때 3개가 연달아 나오는지 체크
     bool WouldCreateThreeInARow(int index, int value)
     {
         int row = index / gridSize;
@@ -314,7 +325,8 @@ public class GameManager : MonoBehaviour, INumberProvider
     {
         if (eraseCount <= 0)
         {
-            Debug.Log("지우기 아이템이 없습니다!");
+            Debug.Log("지우기 아이템이 없습니다! 광고를 시청하세요.");
+            ShowAdForErase();
             return;
         }
 
@@ -332,6 +344,53 @@ public class GameManager : MonoBehaviour, INumberProvider
             }
             eraseBtn.colors = colors;
         }
+    }
+
+    void ShowAdForErase()
+    {
+        if (eraseAdWatchCount >= MAX_AD_WATCH_PER_ITEM)
+        {
+            Debug.Log("이번 판에서 더 이상 광고를 시청할 수 없습니다!");
+            return;
+        }
+
+        if (GoogleAdsManager.Instance.IsAdLoaded())
+        {
+            GoogleAdsManager.Instance.OnRewardEarned += OnEraseAdRewardEarned;
+            GoogleAdsManager.Instance.OnAdClosed += OnEraseAdClosed;
+            GoogleAdsManager.Instance.OnAdFailedToShow += OnEraseAdFailed;
+
+            GoogleAdsManager.Instance.ShowRewardedAd();
+        }
+        else
+        {
+            Debug.Log("광고를 로딩 중입니다. 잠시 후 다시 시도해주세요.");
+            GoogleAdsManager.Instance.LoadRewardedAd();
+        }
+    }
+
+    void OnEraseAdRewardEarned()
+    {
+        eraseCount++;
+        eraseAdWatchCount++; // 광고 시청 횟수 증가
+        Debug.Log($"광고 시청 완료! 지우기 아이템을 획득했습니다. (남은 광고: {GetRemainingEraseAds()}회)");
+
+        UpdateItemButtons();
+
+        GoogleAdsManager.Instance.OnRewardEarned -= OnEraseAdRewardEarned;
+    }
+
+    void OnEraseAdClosed()
+    {
+        Debug.Log("광고가 닫혔습니다.");
+
+        GoogleAdsManager.Instance.OnAdClosed -= OnEraseAdClosed;
+    }
+
+    void OnEraseAdFailed()
+    {
+        Debug.Log("광고 표시에 실패했습니다. 나중에 다시 시도해주세요.");
+        GoogleAdsManager.Instance.OnAdFailedToShow -= OnEraseAdFailed;
     }
 
     float GetTileCountBonus(int tileCount)
@@ -444,7 +503,8 @@ public class GameManager : MonoBehaviour, INumberProvider
     {
         if (restoreCount <= 0)
         {
-            Debug.Log("복원 아이템이 없습니다!");
+            Debug.Log("복원 아이템이 없습니다! 광고를 시청하세요.");
+            ShowAdForRestore();
             return;
         }
 
@@ -483,21 +543,72 @@ public class GameManager : MonoBehaviour, INumberProvider
         UpdateItemButtons();
     }
 
+    void ShowAdForRestore()
+    {
+        if (restoreAdWatchCount >= MAX_AD_WATCH_PER_ITEM)
+        {
+            Debug.Log("이번 판에서 더 이상 광고를 시청할 수 없습니다!");
+            return;
+        }
+
+        if (GoogleAdsManager.Instance.IsAdLoaded())
+        {
+            GoogleAdsManager.Instance.OnRewardEarned += OnRestoreAdRewardEarned;
+            GoogleAdsManager.Instance.OnAdClosed += OnRestoreAdClosed;
+            GoogleAdsManager.Instance.OnAdFailedToShow += OnRestoreAdFailed;
+
+            GoogleAdsManager.Instance.ShowRewardedAd();
+        }
+        else
+        {
+            Debug.Log("광고를 로딩 중입니다. 잠시 후 다시 시도해주세요.");
+            GoogleAdsManager.Instance.LoadRewardedAd();
+        }
+    }
+
+    void OnRestoreAdRewardEarned()
+    {
+        restoreCount++;
+        restoreAdWatchCount++;
+        Debug.Log($"광고 시청 완료! 복원 아이템을 획득했습니다. (남은 광고: {GetRemainingRestoreAds()}회)");
+
+        UpdateItemButtons();
+
+        GoogleAdsManager.Instance.OnRewardEarned -= OnRestoreAdRewardEarned;
+    }
+
+    void OnRestoreAdClosed()
+    {
+        Debug.Log("광고가 닫혔습니다.");
+        GoogleAdsManager.Instance.OnAdClosed -= OnRestoreAdClosed;
+    }
+
+    void OnRestoreAdFailed()
+    {
+        Debug.Log("광고 표시에 실패했습니다. 나중에 다시 시도해주세요.");
+        GoogleAdsManager.Instance.OnAdFailedToShow -= OnRestoreAdFailed;
+    }
+
     void UpdateItemButtons()
     {
         if (restoreBtn != null)
         {
-            restoreBtn.interactable = actionHistory.Count > 0 && restoreCount > 0;
+            bool hasRestoreItem = restoreCount > 0;
+            bool canWatchRestoreAd = restoreAdWatchCount < MAX_AD_WATCH_PER_ITEM;
+            restoreBtn.interactable = actionHistory.Count > 0 && (hasRestoreItem || canWatchRestoreAd);
         }
 
         if (eraseBtn != null)
         {
-            eraseBtn.interactable = eraseCount > 0;
+            bool hasEraseItem = eraseCount > 0;
+            bool canWatchEraseAd = eraseAdWatchCount < MAX_AD_WATCH_PER_ITEM;
+            eraseBtn.interactable = hasEraseItem || canWatchEraseAd;
         }
 
         if (uiManager != null)
         {
             uiManager.UpdateItemCount(eraseCount, restoreCount);
+            uiManager.UpdateAdCountUI(eraseCount, restoreCount, GetRemainingEraseAds(), GetRemainingRestoreAds());
         }
     }
 
@@ -609,7 +720,6 @@ public class GameManager : MonoBehaviour, INumberProvider
             numSet[clickedPos] = nowNum;
             numBtns[clickedPos].SetNumText(nowNum);
 
-            // 합성 점수 추가 (기본 점수 × 콤보 배수 × 타일 개수 보너스)
             AddScore(nowNum, comboCount, currentTileCount);
 
             if (nowNum >= 16 && VFXManager.Instance != null)

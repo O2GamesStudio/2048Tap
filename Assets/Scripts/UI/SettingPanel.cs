@@ -56,7 +56,7 @@ public class SettingPanel : MonoBehaviour
         {
             RectTransform handleRect = soundHandleImage.GetComponent<RectTransform>();
             float targetX = isSoundOn ? 50f : -50f;
-            handleRect.DOAnchorPosX(targetX, 0.3f).SetEase(Ease.OutCubic);
+            handleRect.DOAnchorPosX(targetX, 0.15f).SetEase(Ease.OutCubic);
 
             soundHandleImage.color = isSoundOn ? new Color(0x36 / 255f, 0x26 / 255f, 0x7E / 255f) : Color.white;
         }
@@ -73,7 +73,7 @@ public class SettingPanel : MonoBehaviour
         {
             RectTransform handleRect = musicHandleImage.GetComponent<RectTransform>();
             float targetX = isMusicOn ? 50f : -50f;
-            handleRect.DOAnchorPosX(targetX, 0.3f).SetEase(Ease.OutCubic);
+            handleRect.DOAnchorPosX(targetX, 0.15f).SetEase(Ease.OutCubic);
 
             musicHandleImage.color = isMusicOn ? new Color(0x36 / 255f, 0x26 / 255f, 0x7E / 255f) : Color.white;
         }

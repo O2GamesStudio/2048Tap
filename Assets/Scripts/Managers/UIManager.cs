@@ -20,6 +20,12 @@ public class UIManager : MonoBehaviour
     public TextMeshProUGUI finalScoreTxt;
     public TextMeshProUGUI highScoreTxt;
 
+    [Header("Ad Count UI")]
+    [SerializeField] private GameObject eraseAdCountPanel;      // 지우기 광고 카운트 패널
+    [SerializeField] private TextMeshProUGUI eraseAdCountText;  // 지우기 광고 카운트 텍스트
+    [SerializeField] private GameObject restoreAdCountPanel;    // 복원 광고 카운트 패널
+    [SerializeField] private TextMeshProUGUI restoreAdCountText;// 복원 광고 카운트 텍스트
+
     [Header("Buttons")]
     [SerializeField] Button settingBtn;
 
@@ -135,9 +141,9 @@ public class UIManager : MonoBehaviour
 
     void ResetImagePositions()
     {
-        // 각 이미지를 원래 위치로 되돌림
-        nowNumImage.color = new Color(1, 1, 1, 1); // 알파값 복원
+        nowNumImage.color = new Color(1, 1, 1, 1);
     }
+
     public void UpdateItemCount(int eraseCount, int restoreCount)
     {
         if (eraseCountText != null)
@@ -145,6 +151,46 @@ public class UIManager : MonoBehaviour
 
         if (restoreCountText != null)
             restoreCountText.text = restoreCount.ToString();
+    }
+
+    public void UpdateAdCountUI(int eraseCount, int restoreCount, int remainingEraseAds, int remainingRestoreAds)
+    {
+        if (eraseAdCountPanel != null && eraseAdCountText != null)
+        {
+            if (eraseCount == 0 && remainingEraseAds > 0)
+            {
+                eraseAdCountPanel.SetActive(true);
+                eraseAdCountText.text = $"{remainingEraseAds}/3";
+
+                if (eraseCountText != null)
+                    eraseCountText.gameObject.SetActive(false);
+            }
+            else
+            {
+                eraseAdCountPanel.SetActive(false);
+                if (eraseCountText != null)
+                    eraseCountText.gameObject.SetActive(true);
+            }
+        }
+
+        if (restoreAdCountPanel != null && restoreAdCountText != null)
+        {
+            if (restoreCount == 0 && remainingRestoreAds > 0)
+            {
+                restoreAdCountPanel.SetActive(true);
+                restoreAdCountText.text = $"{remainingRestoreAds}/3";
+
+                if (restoreCountText != null)
+                    restoreCountText.gameObject.SetActive(false);
+            }
+            else
+            {
+                restoreAdCountPanel.SetActive(false);
+
+                if (restoreCountText != null)
+                    restoreCountText.gameObject.SetActive(true);
+            }
+        }
     }
 
     void SettingOnClick()
