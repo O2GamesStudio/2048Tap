@@ -1,6 +1,7 @@
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using DG.Tweening;
 
 public class UIManager : MonoBehaviour
 {
@@ -25,6 +26,15 @@ public class UIManager : MonoBehaviour
     [SerializeField] GameObject settingPanel;
     public GameObject numImageLayer;
 
+    [Header("Animation Settings")]
+    [SerializeField] float numberShiftDuration = 0.3f;
+    private Vector3 nowNumOriginalPos;
+    private Vector3 nextNum1OriginalPos;
+    private Vector3 nextNum2OriginalPos;
+    private Vector3 nowNumOriginalScale;
+    private Vector3 nextNum1OriginalScale;
+    private Vector3 nextNum2OriginalScale;
+
     void Awake()
     {
         if (Instance == null) Instance = this;
@@ -39,6 +49,15 @@ public class UIManager : MonoBehaviour
             numberProvider = GameManager.Instance;
         else if (TutorialManager.Instance != null)
             numberProvider = TutorialManager.Instance;
+
+
+        nowNumOriginalPos = nowNumImage.transform.localPosition;
+        nextNum1OriginalPos = nextNumImage1.transform.localPosition;
+        nextNum2OriginalPos = nextNumImage2.transform.localPosition;
+
+        nowNumOriginalScale = nowNumImage.transform.localScale;
+        nextNum1OriginalScale = nextNumImage1.transform.localScale;
+        nextNum2OriginalScale = nextNumImage2.transform.localScale;
     }
 
     public void UpdateUI()
@@ -75,6 +94,50 @@ public class UIManager : MonoBehaviour
         }
     }
 
+    public float GetNumberShiftDuration()
+    {
+        return numberShiftDuration;
+    }
+    public void AnimateNumberShift()
+    {
+        Sequence sequence = DOTween.Sequence();
+
+        // 1. nowNumImage 페이드 아웃
+        sequence.Append(nowNumImage.DOFade(0f, numberShiftDuration));
+
+        // 2. nextNumImage1이 nowNumImage 위치로 이동하면서 1.5배 커짐
+        sequence.Join(nextNumImage1.transform.DOLocalMove(nowNumOriginalPos, numberShiftDuration));
+        sequence.Join(nextNumImage1.transform.DOScale(nowNumOriginalScale * 1.5f, numberShiftDuration));
+
+        // 3. nextNumImage2가 nextNumImage1 위치로 이동
+        sequence.Join(nextNumImage2.transform.DOLocalMove(nextNum1OriginalPos, numberShiftDuration));
+
+        // 4. 애니메이션 완료 후 처리
+        sequence.OnComplete(() =>
+        {
+            // 스프라이트 업데이트
+            UpdateNumberImages();
+
+            // 원래 위치로 복원
+            nowNumImage.transform.localPosition = nowNumOriginalPos;
+            nextNumImage1.transform.localPosition = nextNum1OriginalPos;
+            nextNumImage2.transform.localPosition = nextNum2OriginalPos;
+
+            // 스케일 복원
+            nowNumImage.transform.localScale = nowNumOriginalScale;
+            nextNumImage1.transform.localScale = nextNum1OriginalScale;
+            nextNumImage2.transform.localScale = nextNum2OriginalScale;
+
+            // 알파값 복원
+            nowNumImage.color = new Color(1, 1, 1, 1);
+        });
+    }
+
+    void ResetImagePositions()
+    {
+        // 각 이미지를 원래 위치로 되돌림
+        nowNumImage.color = new Color(1, 1, 1, 1); // 알파값 복원
+    }
     public void UpdateItemCount(int eraseCount, int restoreCount)
     {
         if (eraseCountText != null)

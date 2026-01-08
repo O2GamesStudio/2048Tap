@@ -42,6 +42,7 @@ public class SoundManager : MonoBehaviour
         {
             Destroy(gameObject);
         }
+        Application.targetFrameRate = 120;
     }
 
     void InitializeSoundManager()

@@ -100,7 +100,7 @@ public class GameManager : MonoBehaviour, INumberProvider
         uiManager = UIManager.Instance;
         soundManager = SoundManager.Instance;
         eraseCount = 1;
-        restoreCount = 1000;
+        restoreCount = 3;
 
         if (numBtns.Length != totalCells)
         {
@@ -303,6 +303,11 @@ public class GameManager : MonoBehaviour, INumberProvider
         nowNum = nextNum;
         nextNum = nextNum2;
         nextNum2 = GenerateNextNum();
+
+        if (uiManager != null)
+        {
+            uiManager.AnimateNumberShift();
+        }
     }
 
     void ToggleEraseMode()
@@ -546,7 +551,7 @@ public class GameManager : MonoBehaviour, INumberProvider
 
         if (sameCount >= 2)
         {
-            comboCount = 0; // 콤보 카운트 초기화
+            comboCount = 0;
             yield return StartCoroutine(MergeSequence(pos));
         }
         else
@@ -561,6 +566,9 @@ public class GameManager : MonoBehaviour, INumberProvider
         }
 
         ShiftNextNums();
+
+        yield return new WaitForSeconds(uiManager.GetNumberShiftDuration());
+
         UpdateInfo();
 
         isAnimating = false;
@@ -652,7 +660,7 @@ public class GameManager : MonoBehaviour, INumberProvider
         uiManager.finalScoreTxt.text = nowScore.ToString();
 
         gameOverPanel.gameObject.SetActive(true);
-        gameOverPanel.UpdateGameOverUI(nowScore);
+        gameOverPanel.UpdateGameOverUI(nowScore, gridSize);
     }
 
     public int GetSpriteIndex(int number)
