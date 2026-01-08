@@ -397,7 +397,6 @@ public class GameManager : MonoBehaviour, INumberProvider
 
             // 배치 점수 추가
             nowScore += nowNum;
-            Debug.Log($"[배치 점수] {nowNum}점 추가");
 
             numBtns[index].SetNumText(nowNum);
             clickedPos = index;
@@ -456,7 +455,6 @@ public class GameManager : MonoBehaviour, INumberProvider
 
         if (lastState.gridSize != gridSize)
         {
-            Debug.LogError("저장된 그리드 크기와 현재 그리드 크기가 다릅니다!");
             return;
         }
 
@@ -467,7 +465,6 @@ public class GameManager : MonoBehaviour, INumberProvider
         nextNum = lastState.nextNum;
         nextNum2 = lastState.nextNum2;
 
-        Debug.Log($"[복원] Score:{nowScore}, nowNum:{nowNum}, nextNum:{nextNum}, nextNum2:{nextNum2}, Stack:{actionHistory.Count}");
 
         for (int i = 0; i < totalCells; i++)
         {
