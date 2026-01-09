@@ -307,17 +307,12 @@ public class UIManager : MonoBehaviour
         // 애니메이션 시퀀스
         Sequence sequence = DOTween.Sequence();
 
-        comboRect.DOLocalMoveY(localPoint.y + comboMoveDistance, 0.85f).SetEase(Ease.OutQuad);
+        comboRect.DOLocalMoveY(localPoint.y + comboMoveDistance, 1.5f).SetEase(Ease.OutExpo);
         sequence.Append(comboRect.DOScale(1.3f, 0.15f).SetEase(Ease.OutBack));
         sequence.Append(comboRect.DOScale(1.0f, 0.1f).SetEase(Ease.InOutSine));
 
-        // 올라가면서 살짝 커졌다가 작아지기
-        sequence.Join(comboRect.DOScale(1.15f, 0.25f).SetEase(Ease.OutSine));
-        sequence.Append(comboRect.DOScale(0.8f, 0.6f).SetEase(Ease.InQuad));
-
         // 페이드 아웃 (마지막 0.5초 동안)
-        sequence.Insert(sequence.Duration() - 0.5f, targetComboImage.DOFade(0f, 0.5f).SetEase(Ease.InQuad));
-
+        sequence.Insert(sequence.Duration() - 0.5f, targetComboImage.DOFade(0f, 1.2f).SetEase(Ease.InQuad));
         // 애니메이션 완료 후 비활성화
         sequence.OnComplete(() => targetComboImage.gameObject.SetActive(false));
     }

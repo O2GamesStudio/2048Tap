@@ -146,14 +146,35 @@ public class GameManager : MonoBehaviour, INumberProvider
 
         for (int a = 0; a < 4; a++)
         {
-            int ranIndex = Random.Range(0, totalCells);
-            int val_nul = Random.Range(0, 8);
-            int value = RanNumVal[val_nul];
+            int ranIndex;
+            int value;
+            int attempts = 0;
+            const int maxAttempts = 100;
 
-            while (numSet[ranIndex] != 0 || WouldCreateThreeInARow(ranIndex, value))
+            do
             {
                 ranIndex = Random.Range(0, totalCells);
+                int val_nul = Random.Range(0, 8);
+                value = RanNumVal[val_nul];
+                attempts++;
+
+                // 무한 루프 방지
+                if (attempts > maxAttempts)
+                {
+                    Debug.LogWarning("초기 배치 시도 횟수 초과. 기본 배치로 전환합니다.");
+                    // 빈 칸 중 아무 곳에나 배치
+                    for (int i = 0; i < totalCells; i++)
+                    {
+                        if (numSet[i] == 0)
+                        {
+                            ranIndex = i;
+                            break;
+                        }
+                    }
+                    break;
+                }
             }
+            while (numSet[ranIndex] != 0 || WouldCreateThreeInARow(ranIndex, value));
 
             SetNum(ranIndex, value);
         }
@@ -175,42 +196,54 @@ public class GameManager : MonoBehaviour, INumberProvider
         int row = index / gridSize;
         int col = index % gridSize;
 
-        int horizontalCount = 1;
-        if (col > 0 && numSet[index - 1] == value)
+        // 가로 방향 체크
+        // 왼쪽으로 연속된 개수 세기
+        int leftCount = 0;
+        for (int i = col - 1; i >= 0; i--)
         {
-            horizontalCount++;
-            if (col > 1 && numSet[index - 2] == value)
-                horizontalCount++;
+            if (numSet[row * gridSize + i] == value)
+                leftCount++;
+            else
+                break;
         }
-        if (col < gridSize - 1 && numSet[index + 1] == value)
-        {
-            horizontalCount++;
-            if (col < gridSize - 2 && numSet[index + 2] == value)
-                horizontalCount++;
-        }
-        if (col > 0 && col < gridSize - 1 && numSet[index - 1] == value && numSet[index + 1] == value)
-            horizontalCount = 3;
 
-        if (horizontalCount >= 3)
+        // 오른쪽으로 연속된 개수 세기
+        int rightCount = 0;
+        for (int i = col + 1; i < gridSize; i++)
+        {
+            if (numSet[row * gridSize + i] == value)
+                rightCount++;
+            else
+                break;
+        }
+
+        // 현재 위치 포함해서 3개 이상이면 true
+        if (leftCount + rightCount + 1 >= 3)
             return true;
 
-        int verticalCount = 1;
-        if (row > 0 && numSet[index - gridSize] == value)
+        // 세로 방향 체크
+        // 위쪽으로 연속된 개수 세기
+        int upCount = 0;
+        for (int i = row - 1; i >= 0; i--)
         {
-            verticalCount++;
-            if (row > 1 && numSet[index - gridSize * 2] == value)
-                verticalCount++;
+            if (numSet[i * gridSize + col] == value)
+                upCount++;
+            else
+                break;
         }
-        if (row < gridSize - 1 && numSet[index + gridSize] == value)
-        {
-            verticalCount++;
-            if (row < gridSize - 2 && numSet[index + gridSize * 2] == value)
-                verticalCount++;
-        }
-        if (row > 0 && row < gridSize - 1 && numSet[index - gridSize] == value && numSet[index + gridSize] == value)
-            verticalCount = 3;
 
-        if (verticalCount >= 3)
+        // 아래쪽으로 연속된 개수 세기
+        int downCount = 0;
+        for (int i = row + 1; i < gridSize; i++)
+        {
+            if (numSet[i * gridSize + col] == value)
+                downCount++;
+            else
+                break;
+        }
+
+        // 현재 위치 포함해서 3개 이상이면 true
+        if (upCount + downCount + 1 >= 3)
             return true;
 
         return false;
@@ -726,10 +759,11 @@ public class GameManager : MonoBehaviour, INumberProvider
                 uiManager.ShowCombo(nowNum, numBtns[clickedPos].transform.position);
             }
 
+            if (soundManager != null)
+                soundManager.PlaySFX(soundManager.combineComboClip);
             if (nowNum >= 16 && VFXManager.Instance != null)
             {
                 VFXManager.Instance.PlayCombineParticle(numBtns[clickedPos].transform, nowNum);
-                soundManager.PlaySFX(soundManager.combineComboClip);
             }
 
             int tempClickedPos = clickedPos;
