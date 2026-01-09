@@ -38,7 +38,6 @@ public class GameManager : MonoBehaviour, INumberProvider
     [HideInInspector] public int eraseCount { get; private set; }
     [HideInInspector] public int restoreCount { get; private set; }
 
-    // 광고 시청 횟수 제한 (매 판마다)
     private int eraseAdWatchCount = 0;
     private int restoreAdWatchCount = 0;
     private const int MAX_AD_WATCH_PER_ITEM = 3;
@@ -57,7 +56,6 @@ public class GameManager : MonoBehaviour, INumberProvider
     [SerializeField] GameOverPanel gameOverPanel;
     private const int MAX_HISTORY_SIZE = 20;
 
-    // 콤보 시스템 변수
     private int comboCount = 0;
 
     private struct GameState
@@ -132,7 +130,6 @@ public class GameManager : MonoBehaviour, INumberProvider
     {
         nowScore = 0;
 
-        // 광고 시청 횟수 초기화
         eraseAdWatchCount = 0;
         restoreAdWatchCount = 0;
 
@@ -158,11 +155,9 @@ public class GameManager : MonoBehaviour, INumberProvider
                 value = RanNumVal[val_nul];
                 attempts++;
 
-                // 무한 루프 방지
                 if (attempts > maxAttempts)
                 {
                     Debug.LogWarning("초기 배치 시도 횟수 초과. 기본 배치로 전환합니다.");
-                    // 빈 칸 중 아무 곳에나 배치
                     for (int i = 0; i < totalCells; i++)
                     {
                         if (numSet[i] == 0)
@@ -196,8 +191,6 @@ public class GameManager : MonoBehaviour, INumberProvider
         int row = index / gridSize;
         int col = index % gridSize;
 
-        // 가로 방향 체크
-        // 왼쪽으로 연속된 개수 세기
         int leftCount = 0;
         for (int i = col - 1; i >= 0; i--)
         {
@@ -207,7 +200,6 @@ public class GameManager : MonoBehaviour, INumberProvider
                 break;
         }
 
-        // 오른쪽으로 연속된 개수 세기
         int rightCount = 0;
         for (int i = col + 1; i < gridSize; i++)
         {
@@ -217,12 +209,9 @@ public class GameManager : MonoBehaviour, INumberProvider
                 break;
         }
 
-        // 현재 위치 포함해서 3개 이상이면 true
         if (leftCount + rightCount + 1 >= 3)
             return true;
 
-        // 세로 방향 체크
-        // 위쪽으로 연속된 개수 세기
         int upCount = 0;
         for (int i = row - 1; i >= 0; i--)
         {
@@ -232,7 +221,6 @@ public class GameManager : MonoBehaviour, INumberProvider
                 break;
         }
 
-        // 아래쪽으로 연속된 개수 세기
         int downCount = 0;
         for (int i = row + 1; i < gridSize; i++)
         {
@@ -242,7 +230,6 @@ public class GameManager : MonoBehaviour, INumberProvider
                 break;
         }
 
-        // 현재 위치 포함해서 3개 이상이면 true
         if (upCount + downCount + 1 >= 3)
             return true;
 
@@ -283,60 +270,61 @@ public class GameManager : MonoBehaviour, INumberProvider
         {
             int a = Random.Range(0, 4);
             if (a == 3)
-            {
                 result = 4;
-            }
-            else result = 2;
+            else
+                result = 2;
         }
         else if (highScore == 16)
         {
-            int a = Random.Range(0, 100);
-            if (a <= 65) result = 2;
-            else if (a > 65 && a <= 90) result = 4;
-            else result = 8;
+            int a = Random.Range(0, 5);
+            if (a == 4)
+                result = 4;
+            else
+                result = 2;
         }
         else if (highScore == 32)
         {
-            int a = Random.Range(0, 100);
-            if (a <= 50) result = 2;
-            else if (a > 50 && a <= 87) result = 4;
-            else if (a > 87 && a <= 97) result = 8;
-            else result = 16;
+            int a = Random.Range(0, 6);
+            if (a == 5)
+                result = 8;
+            else if (a == 4)
+                result = 4;
+            else
+                result = 2;
         }
         else if (highScore == 64)
         {
-            int a = Random.Range(0, 100);
-            if (a <= 45) result = 2;
-            else if (a > 45 && a <= 80) result = 4;
-            else if (a > 80 && a <= 94) result = 8;
-            else result = 16;
+            int a = Random.Range(0, 7);
+            if (a == 6)
+                result = 8;
+            else if (a == 5)
+                result = 4;
+            else
+                result = 2;
         }
         else if (highScore == 128)
         {
-            int a = Random.Range(0, 100);
-            if (a <= 40) result = 2;
-            else if (a > 40 && a <= 75) result = 4;
-            else if (a > 75 && a <= 91) result = 8;
-            else if (a > 91 && a <= 98) result = 16;
-            else result = 32;
+            int a = Random.Range(0, 8);
+            if (a == 7)
+                result = 16;
+            else if (a == 6)
+                result = 8;
+            else if (a == 5)
+                result = 4;
+            else
+                result = 2;
         }
-        else if (highScore == 256)
+        else if (highScore >= 256)
         {
-            int a = Random.Range(0, 100);
-            if (a <= 35) result = 2;
-            else if (a > 35 && a <= 62) result = 4;
-            else if (a > 62 && a <= 85) result = 8;
-            else if (a > 85 && a <= 96) result = 16;
-            else result = 32;
-        }
-        else if (highScore > 256)
-        {
-            int a = Random.Range(0, 100);
-            if (a <= 40) result = 2;
-            else if (a > 40 && a <= 62) result = 4;
-            else if (a > 62 && a <= 79) result = 8;
-            else if (a > 79 && a <= 92) result = 16;
-            else result = 32;
+            int a = Random.Range(0, 9);
+            if (a == 8)
+                result = 16;
+            else if (a == 7)
+                result = 8;
+            else if (a == 6)
+                result = 4;
+            else
+                result = 2;
         }
 
         return result;
@@ -358,14 +346,12 @@ public class GameManager : MonoBehaviour, INumberProvider
     {
         if (eraseCount <= 0)
         {
-            Debug.Log("지우기 아이템이 없습니다! 광고를 시청하세요.");
             ShowAdForErase();
             return;
         }
 
         isEraseMode = !isEraseMode;
 
-        // UIManager를 통해 버튼 색상 변경
         if (uiManager != null)
         {
             uiManager.SetEraseModeVisual(isEraseMode);
@@ -398,8 +384,7 @@ public class GameManager : MonoBehaviour, INumberProvider
     void OnEraseAdRewardEarned()
     {
         eraseCount++;
-        eraseAdWatchCount++; // 광고 시청 횟수 증가
-        Debug.Log($"광고 시청 완료! 지우기 아이템을 획득했습니다. (남은 광고: {GetRemainingEraseAds()}회)");
+        eraseAdWatchCount++;
 
         UpdateItemButtons();
 
@@ -408,14 +393,11 @@ public class GameManager : MonoBehaviour, INumberProvider
 
     void OnEraseAdClosed()
     {
-        Debug.Log("광고가 닫혔습니다.");
-
         GoogleAdsManager.Instance.OnAdClosed -= OnEraseAdClosed;
     }
 
     void OnEraseAdFailed()
     {
-        Debug.Log("광고 표시에 실패했습니다. 나중에 다시 시도해주세요.");
         GoogleAdsManager.Instance.OnAdFailedToShow -= OnEraseAdFailed;
     }
 
@@ -424,7 +406,7 @@ public class GameManager : MonoBehaviour, INumberProvider
         if (tileCount >= 5) return 2f;
         if (tileCount == 4) return 1.6f;
         if (tileCount == 3) return 1.3f;
-        return 1f; // 2개
+        return 1f;
     }
 
     float GetComboMultiplier(int combo)
@@ -432,7 +414,7 @@ public class GameManager : MonoBehaviour, INumberProvider
         if (combo >= 4) return 4f;
         if (combo == 3) return 2f;
         if (combo == 2) return 1.5f;
-        return 1f; // 1회
+        return 1f;
     }
 
     void AddScore(int mergedNumber, int comboMultiplier, int tileCount)
@@ -462,7 +444,6 @@ public class GameManager : MonoBehaviour, INumberProvider
 
                 isEraseMode = false;
 
-                // UIManager를 통해 버튼 색상 원래대로 복원
                 if (uiManager != null)
                 {
                     uiManager.SetEraseModeVisual(false);
@@ -485,7 +466,6 @@ public class GameManager : MonoBehaviour, INumberProvider
         {
             SaveGameState();
 
-            // 배치 점수 추가
             nowScore += nowNum;
 
             numBtns[index].SetNumText(nowNum);
@@ -529,7 +509,6 @@ public class GameManager : MonoBehaviour, INumberProvider
     {
         if (restoreCount <= 0)
         {
-            Debug.Log("복원 아이템이 없습니다! 광고를 시청하세요.");
             ShowAdForRestore();
             return;
         }
@@ -555,7 +534,6 @@ public class GameManager : MonoBehaviour, INumberProvider
         nowNum = lastState.nowNum;
         nextNum = lastState.nextNum;
         nextNum2 = lastState.nextNum2;
-
 
         for (int i = 0; i < totalCells; i++)
         {
@@ -596,7 +574,6 @@ public class GameManager : MonoBehaviour, INumberProvider
     {
         restoreCount++;
         restoreAdWatchCount++;
-        Debug.Log($"광고 시청 완료! 복원 아이템을 획득했습니다. (남은 광고: {GetRemainingRestoreAds()}회)");
 
         UpdateItemButtons();
 
@@ -605,13 +582,11 @@ public class GameManager : MonoBehaviour, INumberProvider
 
     void OnRestoreAdClosed()
     {
-        Debug.Log("광고가 닫혔습니다.");
         GoogleAdsManager.Instance.OnAdClosed -= OnRestoreAdClosed;
     }
 
     void OnRestoreAdFailed()
     {
-        Debug.Log("광고 표시에 실패했습니다. 나중에 다시 시도해주세요.");
         GoogleAdsManager.Instance.OnAdFailedToShow -= OnRestoreAdFailed;
     }
 
@@ -623,15 +598,12 @@ public class GameManager : MonoBehaviour, INumberProvider
             uiManager.UpdateAdCountUI(eraseCount, restoreCount, GetRemainingEraseAds(), GetRemainingRestoreAds());
         }
 
-        // Restore 버튼은 히스토리가 있어야만 사용 가능 (추가 조건)
         if (restoreBtn != null)
         {
             bool hasRestoreItem = restoreCount > 0;
             bool canWatchRestoreAd = restoreAdWatchCount < MAX_AD_WATCH_PER_ITEM;
             bool hasHistory = actionHistory.Count > 0;
 
-            // 히스토리가 없으면 무조건 비활성화
-            // 히스토리가 있으면 아이템이 있거나 광고를 볼 수 있을 때 활성화
             if (!hasHistory)
             {
                 restoreBtn.interactable = false;
@@ -720,9 +692,9 @@ public class GameManager : MonoBehaviour, INumberProvider
     {
         while (sameCount >= 2)
         {
-            comboCount++; // 콤보 증가
+            comboCount++;
 
-            int currentTileCount = sameCount + 1; // 합쳐지는 타일 개수 (클릭한 칸 포함)
+            int currentTileCount = sameCount + 1;
 
             Vector3 targetPos = numBtns[clickedPos].transform.position;
 
@@ -753,7 +725,6 @@ public class GameManager : MonoBehaviour, INumberProvider
 
             AddScore(nowNum, comboCount, currentTileCount);
 
-            // 콤보가 2회 이상일 때만 콤보 UI 표시
             if (comboCount >= 2 && uiManager != null)
             {
                 uiManager.ShowCombo(nowNum, numBtns[clickedPos].transform.position);

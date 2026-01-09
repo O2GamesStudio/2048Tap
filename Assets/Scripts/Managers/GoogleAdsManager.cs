@@ -1,6 +1,7 @@
 using System;
 using UnityEngine;
 using GoogleMobileAds.Api;
+using System.Collections;
 
 public class GoogleAdsManager : MonoBehaviour
 {
@@ -19,17 +20,18 @@ public class GoogleAdsManager : MonoBehaviour
         }
     }
 
-    // 플랫폼별 광고 ID
 #if UNITY_ANDROID
-    private string rewardedAdUnitId = "ca-app-pub-3490273194196393/8703866303";
+    private string rewardedAdUnitId = "ca-app-pub-3940256099942544/5224354917"; // 테스트 ID (출시 시 실제 ID로 변경)
+    // private string rewardedAdUnitId = "ca-app-pub-3490273194196393/8703866303"; // 실제 ID
 #else
     private string rewardedAdUnitId = "ca-app-pub-3940256099942544/5224354917"; 
 #endif
 
     private RewardedAd rewardedAd;
     private bool isAdLoaded = false;
+    private bool isInitialized = false;
+    private bool isLoadingAd = false;
 
-    // 보상 콜백
     public event Action OnRewardEarned;
     public event Action OnAdClosed;
     public event Action OnAdFailedToLoad;
@@ -51,122 +53,149 @@ public class GoogleAdsManager : MonoBehaviour
 
     private void InitializeAds()
     {
-        // AdMob 초기화
-        MobileAds.Initialize(initStatus =>
+        try
         {
-            Debug.Log("AdMob 초기화 완료");
-            LoadRewardedAd();
-        });
+            MobileAds.Initialize(initStatus =>
+            {
+                isInitialized = true;
+                StartCoroutine(LoadAdWithDelay(0.5f));
+            });
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogError($"AdMob 초기화 실패: {e.Message}");
+        }
     }
 
-    /// <summary>
-    /// 보상형 광고 로드
-    /// </summary>
+    private IEnumerator LoadAdWithDelay(float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        LoadRewardedAd();
+    }
+
     public void LoadRewardedAd()
     {
-        // 기존 광고가 있다면 제거
+        if (isLoadingAd)
+        {
+            return;
+        }
+
+        if (!isInitialized)
+        {
+            StartCoroutine(LoadAdWithDelay(3f));
+            return;
+        }
+
+        isLoadingAd = true;
+
         if (rewardedAd != null)
         {
-            rewardedAd.Destroy();
+            try
+            {
+                rewardedAd.Destroy();
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogWarning($"광고 제거 실패: {e.Message}");
+            }
             rewardedAd = null;
         }
 
-        Debug.Log("보상형 광고 로딩 중...");
+        try
+        {
+            var adRequest = new AdRequest();
 
-        // 광고 요청 생성
-        var adRequest = new AdRequest();
-
-        // 보상형 광고 로드
-        RewardedAd.Load(rewardedAdUnitId, adRequest,
-            (RewardedAd ad, LoadAdError error) =>
-            {
-                if (error != null || ad == null)
+            RewardedAd.Load(rewardedAdUnitId, adRequest,
+                (RewardedAd ad, LoadAdError error) =>
                 {
-                    Debug.LogError("보상형 광고 로드 실패: " + error);
-                    isAdLoaded = false;
-                    OnAdFailedToLoad?.Invoke();
-                    return;
-                }
+                    isLoadingAd = false;
 
-                Debug.Log("보상형 광고 로드 성공");
-                rewardedAd = ad;
-                isAdLoaded = true;
+                    if (error != null || ad == null)
+                    {
+                        isAdLoaded = false;
+                        OnAdFailedToLoad?.Invoke();
+                        StartCoroutine(LoadAdWithDelay(10f));
+                        return;
+                    }
 
-                RegisterEventHandlers(rewardedAd);
-            });
+                    rewardedAd = ad;
+                    isAdLoaded = true;
+                    RegisterEventHandlers(rewardedAd);
+                });
+        }
+        catch (System.Exception e)
+        {
+            isLoadingAd = false;
+            Debug.LogError($"광고 로드 예외: {e.Message}");
+        }
     }
 
-    /// <summary>
-    /// 광고 이벤트 핸들러 등록
-    /// </summary>
     private void RegisterEventHandlers(RewardedAd ad)
     {
-        // 광고가 전체 화면 콘텐츠를 표시했을 때
         ad.OnAdFullScreenContentOpened += () =>
         {
-            Debug.Log("보상형 광고가 열렸습니다.");
+            Debug.Log("광고 열림");
         };
 
-        // 광고가 전체 화면 콘텐츠를 닫았을 때
         ad.OnAdFullScreenContentClosed += () =>
         {
-            Debug.Log("보상형 광고가 닫혔습니다.");
+            Debug.Log("광고 닫힘");
             OnAdClosed?.Invoke();
-
-            // 광고를 다시 로드
-            LoadRewardedAd();
+            StartCoroutine(LoadAdWithDelay(0.5f));
         };
 
-        // 광고 표시 실패 시
         ad.OnAdFullScreenContentFailed += (AdError error) =>
         {
-            Debug.LogError("보상형 광고 표시 실패: " + error);
+            Debug.LogError($"광고 표시 실패: {error.GetMessage()}");
             OnAdFailedToShow?.Invoke();
-
-            // 광고를 다시 로드
-            LoadRewardedAd();
+            StartCoroutine(LoadAdWithDelay(0.5f));
         };
     }
 
-    /// <summary>
-    /// 보상형 광고 표시
-    /// </summary>
     public void ShowRewardedAd()
     {
         if (rewardedAd != null && isAdLoaded)
         {
-            rewardedAd.Show((Reward reward) =>
+            try
             {
-                Debug.Log($"보상 지급: {reward.Type}, 수량: {reward.Amount}");
-                OnRewardEarned?.Invoke();
-            });
+                rewardedAd.Show((Reward reward) =>
+                {
+                    Debug.Log($"보상 획득: {reward.Type}, {reward.Amount}");
+                    OnRewardEarned?.Invoke();
+                });
 
-            isAdLoaded = false;
+                isAdLoaded = false;
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError($"광고 표시 예외: {e.Message}");
+                OnAdFailedToShow?.Invoke();
+            }
         }
         else
         {
-            Debug.LogWarning("보상형 광고가 아직 로드되지 않았습니다.");
             OnAdFailedToShow?.Invoke();
 
-            // 광고가 없으면 다시 로드 시도
-            LoadRewardedAd();
+            if (!isLoadingAd)
+            {
+                LoadRewardedAd();
+            }
         }
     }
 
-    /// <summary>
-    /// 광고가 로드되었는지 확인
-    /// </summary>
     public bool IsAdLoaded()
     {
         return isAdLoaded && rewardedAd != null;
     }
 
-    /// <summary>
-    /// 현재 사용 중인 광고 ID 반환 (디버깅용)
-    /// </summary>
     public string GetAdUnitId()
     {
         return rewardedAdUnitId;
+    }
+
+    public bool IsInitialized()
+    {
+        return isInitialized;
     }
 
     private void OnDestroy()
