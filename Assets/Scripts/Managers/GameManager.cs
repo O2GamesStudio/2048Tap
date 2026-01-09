@@ -720,6 +720,12 @@ public class GameManager : MonoBehaviour, INumberProvider
 
             AddScore(nowNum, comboCount, currentTileCount);
 
+            // 콤보가 2회 이상일 때만 콤보 UI 표시
+            if (comboCount >= 2 && uiManager != null)
+            {
+                uiManager.ShowCombo(nowNum, numBtns[clickedPos].transform.position);
+            }
+
             if (nowNum >= 16 && VFXManager.Instance != null)
             {
                 VFXManager.Instance.PlayCombineParticle(numBtns[clickedPos].transform, nowNum);
