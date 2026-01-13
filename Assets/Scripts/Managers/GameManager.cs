@@ -124,6 +124,11 @@ public class GameManager : MonoBehaviour, INumberProvider
         uiManager.highScoreTxt.text = PlayerPrefs.GetInt($"HighScore_{gridSize}x{gridSize}").ToString();
 
         UpdateItemButtons();
+
+        if (!GoogleAdsManager.Instance.IsAdLoaded() && !GoogleAdsManager.Instance.IsLoadingAd())
+        {
+            GoogleAdsManager.Instance.LoadRewardedAd();
+        }
     }
 
     void InitGame()
@@ -385,19 +390,27 @@ public class GameManager : MonoBehaviour, INumberProvider
     {
         eraseCount++;
         eraseAdWatchCount++;
-
         UpdateItemButtons();
 
+        // 이벤트 구독 해제
         GoogleAdsManager.Instance.OnRewardEarned -= OnEraseAdRewardEarned;
+        GoogleAdsManager.Instance.OnAdClosed -= OnEraseAdClosed;
+        GoogleAdsManager.Instance.OnAdFailedToShow -= OnEraseAdFailed;
     }
 
     void OnEraseAdClosed()
     {
+        // 이벤트 구독 해제
         GoogleAdsManager.Instance.OnAdClosed -= OnEraseAdClosed;
+        GoogleAdsManager.Instance.OnRewardEarned -= OnEraseAdRewardEarned;
+        GoogleAdsManager.Instance.OnAdFailedToShow -= OnEraseAdFailed;
     }
 
     void OnEraseAdFailed()
     {
+        // 이벤트 구독 해제
+        GoogleAdsManager.Instance.OnRewardEarned -= OnEraseAdRewardEarned;
+        GoogleAdsManager.Instance.OnAdClosed -= OnEraseAdClosed;
         GoogleAdsManager.Instance.OnAdFailedToShow -= OnEraseAdFailed;
     }
 
@@ -423,6 +436,12 @@ public class GameManager : MonoBehaviour, INumberProvider
         float tileBonus = GetTileCountBonus(tileCount);
         int scoreToAdd = Mathf.CeilToInt(mergedNumber * comboBonus * tileBonus);
         nowScore += scoreToAdd;
+
+        // 합성 시에만 plusScoreTxt 값 업데이트
+        if (uiManager != null)
+        {
+            uiManager.UpdatePlusScore(scoreToAdd);
+        }
     }
 
     public void BtnOnClicked(int index)
@@ -467,6 +486,12 @@ public class GameManager : MonoBehaviour, INumberProvider
             SaveGameState();
 
             nowScore += nowNum;
+
+            // 버튼 클릭 시에는 plusScoreTxt를 숨김
+            if (uiManager != null)
+            {
+                uiManager.HidePlusScore();
+            }
 
             numBtns[index].SetNumText(nowNum);
             clickedPos = index;
@@ -574,19 +599,27 @@ public class GameManager : MonoBehaviour, INumberProvider
     {
         restoreCount++;
         restoreAdWatchCount++;
-
         UpdateItemButtons();
 
+        // 이벤트 구독 해제
         GoogleAdsManager.Instance.OnRewardEarned -= OnRestoreAdRewardEarned;
+        GoogleAdsManager.Instance.OnAdClosed -= OnRestoreAdClosed;
+        GoogleAdsManager.Instance.OnAdFailedToShow -= OnRestoreAdFailed;
     }
 
     void OnRestoreAdClosed()
     {
+        // 이벤트 구독 해제
         GoogleAdsManager.Instance.OnAdClosed -= OnRestoreAdClosed;
+        GoogleAdsManager.Instance.OnRewardEarned -= OnRestoreAdRewardEarned;
+        GoogleAdsManager.Instance.OnAdFailedToShow -= OnRestoreAdFailed;
     }
 
     void OnRestoreAdFailed()
     {
+        // 이벤트 구독 해제
+        GoogleAdsManager.Instance.OnRewardEarned -= OnRestoreAdRewardEarned;
+        GoogleAdsManager.Instance.OnAdClosed -= OnRestoreAdClosed;
         GoogleAdsManager.Instance.OnAdFailedToShow -= OnRestoreAdFailed;
     }
 

@@ -51,6 +51,26 @@ public class GoogleAdsManager : MonoBehaviour
         }
     }
 
+    private void OnEnable()
+    {
+        // 씬이 로드될 때마다 광고 미리 로드
+        UnityEngine.SceneManagement.SceneManager.sceneLoaded += OnSceneLoaded;
+    }
+
+    private void OnDisable()
+    {
+        UnityEngine.SceneManagement.SceneManager.sceneLoaded -= OnSceneLoaded;
+    }
+
+    private void OnSceneLoaded(UnityEngine.SceneManagement.Scene scene, UnityEngine.SceneManagement.LoadSceneMode mode)
+    {
+        // 씬이 로드되면 광고가 없을 때 자동으로 로드
+        if (!isAdLoaded && !isLoadingAd && isInitialized)
+        {
+            StartCoroutine(LoadAdWithDelay(0.5f));
+        }
+    }
+
     private void InitializeAds()
     {
         try
@@ -58,6 +78,7 @@ public class GoogleAdsManager : MonoBehaviour
             MobileAds.Initialize(initStatus =>
             {
                 isInitialized = true;
+                Debug.Log("AdMob 초기화 완료");
                 StartCoroutine(LoadAdWithDelay(0.5f));
             });
         }
@@ -77,11 +98,13 @@ public class GoogleAdsManager : MonoBehaviour
     {
         if (isLoadingAd)
         {
+            Debug.Log("이미 광고를 로딩 중입니다.");
             return;
         }
 
         if (!isInitialized)
         {
+            Debug.Log("AdMob이 아직 초기화되지 않았습니다. 3초 후 재시도합니다.");
             StartCoroutine(LoadAdWithDelay(3f));
             return;
         }
@@ -105,6 +128,8 @@ public class GoogleAdsManager : MonoBehaviour
         {
             var adRequest = new AdRequest();
 
+            Debug.Log("광고 로딩 시작...");
+
             RewardedAd.Load(rewardedAdUnitId, adRequest,
                 (RewardedAd ad, LoadAdError error) =>
                 {
@@ -112,14 +137,17 @@ public class GoogleAdsManager : MonoBehaviour
 
                     if (error != null || ad == null)
                     {
+                        Debug.LogError($"광고 로드 실패: {error?.GetMessage()}");
                         isAdLoaded = false;
                         OnAdFailedToLoad?.Invoke();
+                        // 실패 시 10초 후 재시도
                         StartCoroutine(LoadAdWithDelay(10f));
                         return;
                     }
 
                     rewardedAd = ad;
                     isAdLoaded = true;
+                    Debug.Log("광고 로드 성공!");
                     RegisterEventHandlers(rewardedAd);
                 });
         }
@@ -127,6 +155,8 @@ public class GoogleAdsManager : MonoBehaviour
         {
             isLoadingAd = false;
             Debug.LogError($"광고 로드 예외: {e.Message}");
+            // 예외 발생 시 10초 후 재시도
+            StartCoroutine(LoadAdWithDelay(10f));
         }
     }
 
@@ -140,14 +170,18 @@ public class GoogleAdsManager : MonoBehaviour
         ad.OnAdFullScreenContentClosed += () =>
         {
             Debug.Log("광고 닫힘");
+            isAdLoaded = false;
             OnAdClosed?.Invoke();
+            // 광고가 닫힌 후 즉시 다음 광고 로드
             StartCoroutine(LoadAdWithDelay(0.5f));
         };
 
         ad.OnAdFullScreenContentFailed += (AdError error) =>
         {
             Debug.LogError($"광고 표시 실패: {error.GetMessage()}");
+            isAdLoaded = false;
             OnAdFailedToShow?.Invoke();
+            // 광고 표시 실패 시 즉시 다음 광고 로드
             StartCoroutine(LoadAdWithDelay(0.5f));
         };
     }
@@ -169,11 +203,15 @@ public class GoogleAdsManager : MonoBehaviour
             catch (System.Exception e)
             {
                 Debug.LogError($"광고 표시 예외: {e.Message}");
+                isAdLoaded = false;
                 OnAdFailedToShow?.Invoke();
+                // 광고 표시 실패 시 즉시 다음 광고 로드
+                StartCoroutine(LoadAdWithDelay(0.5f));
             }
         }
         else
         {
+            Debug.Log("광고가 아직 로드되지 않았습니다.");
             OnAdFailedToShow?.Invoke();
 
             if (!isLoadingAd)
@@ -186,6 +224,11 @@ public class GoogleAdsManager : MonoBehaviour
     public bool IsAdLoaded()
     {
         return isAdLoaded && rewardedAd != null;
+    }
+
+    public bool IsLoadingAd()
+    {
+        return isLoadingAd;
     }
 
     public string GetAdUnitId()

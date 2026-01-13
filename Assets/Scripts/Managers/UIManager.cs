@@ -18,6 +18,7 @@ public class UIManager : MonoBehaviour
     [Header("Texts")]
     [SerializeField] TextMeshProUGUI eraseCountText, restoreCountText;
     public TextMeshProUGUI nowScoreTxt;
+    public TextMeshProUGUI plusScoreTxt;
     public TextMeshProUGUI finalScoreTxt;
     public TextMeshProUGUI highScoreTxt;
 
@@ -84,6 +85,12 @@ public class UIManager : MonoBehaviour
         restoreBtnImage = restoreBtn.GetComponent<Image>();
 
         InitializeComboImages();
+
+        // plusScoreTxt 초기 비활성화
+        if (plusScoreTxt != null)
+        {
+            plusScoreTxt.gameObject.SetActive(false);
+        }
     }
 
     void InitializeComboImages()
@@ -251,6 +258,23 @@ public class UIManager : MonoBehaviour
         if (eraseBtnImage != null)
         {
             eraseBtnImage.color = isActive ? Color.red : Color.white;
+        }
+    }
+
+    public void UpdatePlusScore(int score)
+    {
+        if (plusScoreTxt != null)
+        {
+            plusScoreTxt.text = "+" + score.ToString();
+            plusScoreTxt.gameObject.SetActive(true);
+        }
+    }
+
+    public void HidePlusScore()
+    {
+        if (plusScoreTxt != null)
+        {
+            plusScoreTxt.gameObject.SetActive(false);
         }
     }
 

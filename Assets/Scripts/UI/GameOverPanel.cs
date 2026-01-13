@@ -15,6 +15,23 @@ public class GameOverPanel : MonoBehaviour
         toLobbyBtn.onClick.AddListener(ToLobbyOnClick);
     }
 
+    void OnEnable()
+    {
+        // 이벤트 구독
+        GoogleAdsManager.Instance.OnAdClosed += OnAdClosedHandler;
+        GoogleAdsManager.Instance.OnAdFailedToShow += OnAdFailedHandler;
+    }
+
+    void OnDisable()
+    {
+        // 이벤트 구독 해제
+        if (GoogleAdsManager.Instance != null)
+        {
+            GoogleAdsManager.Instance.OnAdClosed -= OnAdClosedHandler;
+            GoogleAdsManager.Instance.OnAdFailedToShow -= OnAdFailedHandler;
+        }
+    }
+
     public void UpdateGameOverUI(int score, int gridSize)
     {
         scoreText.text = score.ToString();
@@ -25,6 +42,29 @@ public class GameOverPanel : MonoBehaviour
     }
 
     void RetryOnClick()
+    {
+        // 광고가 로드되어 있으면 광고 표시
+        if (GoogleAdsManager.Instance.IsAdLoaded())
+        {
+            GoogleAdsManager.Instance.ShowRewardedAd();
+        }
+        else
+        {
+            RestartScene();
+        }
+    }
+
+    void OnAdClosedHandler()
+    {
+        RestartScene();
+    }
+
+    void OnAdFailedHandler()
+    {
+        RestartScene();
+    }
+
+    void RestartScene()
     {
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
