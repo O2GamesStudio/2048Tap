@@ -61,6 +61,7 @@ public class LobbyManager : MonoBehaviour
         if (layoutManager != null)
         {
             layoutManager.RefreshLockPanels();
+            layoutManager.UpdateChallengeSetVisibility(chapterNum);
         }
     }
     void SettingOnClick()
@@ -129,6 +130,7 @@ public class LobbyManager : MonoBehaviour
             if (layoutManager != null)
             {
                 layoutManager.RefreshLockPanels();
+                layoutManager.UpdateChallengeSetVisibility(chapterNum);
             }
 
             SlideChapters(oldChapterNum, chapterNum);
@@ -151,6 +153,7 @@ public class LobbyManager : MonoBehaviour
             if (layoutManager != null)
             {
                 layoutManager.RefreshLockPanels();
+                layoutManager.UpdateChallengeSetVisibility(chapterNum);
             }
 
             SlideChapters(oldChapterNum, chapterNum);

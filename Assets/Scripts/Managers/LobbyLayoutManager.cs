@@ -21,6 +21,7 @@ public class LobbyLayoutManager : MonoBehaviour
     [SerializeField] RectTransform rightArrowBtn;
     [SerializeField] RectTransform topText;
     [SerializeField] RectTransform highScoreSet;
+    [SerializeField] RectTransform challengeSet;
     [SerializeField] Canvas canvas;
 
     [Header("Background Settings")]
@@ -54,6 +55,12 @@ public class LobbyLayoutManager : MonoBehaviour
         SetupAnchors();
         AdjustLayout();
         UpdateLockPanels();
+
+        // 초기화 시 challengeSet 비활성화
+        if (challengeSet != null)
+        {
+            challengeSet.gameObject.SetActive(false);
+        }
     }
 
     void SetupAnchors()
@@ -92,6 +99,13 @@ public class LobbyLayoutManager : MonoBehaviour
             highScoreSet.anchorMax = new Vector2(0.5f, 0.5f);
             highScoreSet.pivot = new Vector2(0.5f, 0.5f);
         }
+        if (challengeSet != null)
+        {
+            challengeSet.anchorMin = new Vector2(0.5f, 0.5f);
+            challengeSet.anchorMax = new Vector2(0.5f, 0.5f);
+            challengeSet.pivot = new Vector2(0.5f, 0.5f);
+        }
+
     }
 
     void AdjustLayout()
@@ -184,6 +198,12 @@ public class LobbyLayoutManager : MonoBehaviour
             float bottomY = backgroundYOffset - (backgroundSize / 2) - bottomTextDistanceFromBackground;
             highScoreSet.anchoredPosition = new Vector2(0, bottomY);
         }
+
+        if (challengeSet != null)
+        {
+            float bottomY = backgroundYOffset - (backgroundSize / 2) - bottomTextDistanceFromBackground - 250f;
+            challengeSet.anchoredPosition = new Vector2(0, bottomY);
+        }
     }
 
     void UpdateLockPanels()
@@ -215,6 +235,32 @@ public class LobbyLayoutManager : MonoBehaviour
     public void RefreshLockPanels()
     {
         UpdateLockPanels();
+    }
+
+    /// <summary>
+    /// ChallengeSet의 활성화 상태를 업데이트합니다.
+    /// 5x5 게임(chapterNum == 1)이 선택되었고, 5x5의 highscore가 3000 이상일 때만 활성화됩니다.
+    /// </summary>
+    /// <param name="currentChapterNum">현재 선택된 챕터 번호 (0: 4x4, 1: 5x5)</param>
+    public void UpdateChallengeSetVisibility(int currentChapterNum)
+    {
+        if (challengeSet == null) return;
+
+        // 5x5 게임이 선택되었는지 확인 (chapterNum == 1)
+        if (currentChapterNum == 1)
+        {
+            // 5x5의 최고 점수 확인
+            string highScoreKey = "HighScore_5x5";
+            int highScore = PlayerPrefs.GetInt(highScoreKey, 0);
+
+            // 3000점 이상일 때만 활성화
+            challengeSet.gameObject.SetActive(highScore >= 3000);
+        }
+        else
+        {
+            // 5x5가 아닌 경우 비활성화
+            challengeSet.gameObject.SetActive(false);
+        }
     }
 
     void OnRectTransformDimensionsChange()
