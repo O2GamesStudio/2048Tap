@@ -5071,6 +5071,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::GameManager
   tutorial: {fileID: 736319934}
   gridSize: 4
+  blockSprite: {fileID: -7992731505575071818, guid: ae0052860c57e6b4f8427df575c512a3, type: 3}
   _numberSprites:
   - {fileID: 21300000, guid: a1a56ca1e6877f04995cf1d26643f056, type: 3}
   - {fileID: 21300000, guid: ed7e6e339be122e418b57f42ec4b7770, type: 3}

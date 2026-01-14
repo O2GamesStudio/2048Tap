@@ -10,6 +10,7 @@ public class NumBtn : MonoBehaviour
     Image numImage;
     int num = 0;
     INumberProvider numberProvider;
+    private bool isLocked = false;
 
     private static Transform numImageLayer;
 
@@ -127,6 +128,25 @@ public class NumBtn : MonoBehaviour
         return num;
     }
 
+    public bool IsLocked()
+    {
+        return isLocked;
+    }
+
+    public void LockButton()
+    {
+        isLocked = true;
+        num = -1;
+        UpdateBtnImage();
+    }
+
+    public void UnlockButton()
+    {
+        isLocked = false;
+        num = 0;
+        UpdateBtnImage();
+    }
+
     public void SetNumText(int _num)
     {
         num = _num;
@@ -144,6 +164,16 @@ public class NumBtn : MonoBehaviour
         }
 
         if (numImage == null || numberProvider == null) return;
+
+        // 잠긴 버튼인 경우 blockSprite 사용
+        if (isLocked || num == -1)
+        {
+            if (GameManager.Instance != null && GameManager.Instance.blockSprite != null)
+            {
+                numImage.sprite = GameManager.Instance.blockSprite;
+            }
+            return;
+        }
 
         if (num == 0)
         {

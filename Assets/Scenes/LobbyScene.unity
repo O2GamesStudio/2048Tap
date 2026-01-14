@@ -757,6 +757,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Challenge
   plusBtn: {fileID: 1606701785}
   minusBtn: {fileID: 1885463737}
+  startGameBtn: {fileID: 1705728940}
   challengeText: {fileID: 1290594320}
   challengeNum: 0
   maxChallengeNum: 4

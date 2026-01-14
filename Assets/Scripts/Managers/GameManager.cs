@@ -142,6 +142,7 @@ public class GameManager : MonoBehaviour, INumberProvider
 
         for (int a = 0; a < totalCells; a++)
         {
+            numBtns[a].UnlockButton(); // 모든 버튼 잠금 해제
             numBtns[a].SetNumText(0);
             visited[a] = false;
             isFilled[a] = false;
@@ -167,7 +168,7 @@ public class GameManager : MonoBehaviour, INumberProvider
                     Debug.LogWarning("초기 배치 시도 횟수 초과. 기본 배치로 전환합니다.");
                     for (int i = 0; i < totalCells; i++)
                     {
-                        if (numSet[i] == 0)
+                        if (numSet[i] == 0 && !numBtns[i].IsLocked())
                         {
                             ranIndex = i;
                             break;
@@ -176,7 +177,7 @@ public class GameManager : MonoBehaviour, INumberProvider
                     break;
                 }
             }
-            while (numSet[ranIndex] != 0 || WouldCreateThreeInARow(ranIndex, value));
+            while (numSet[ranIndex] != 0 || numSet[ranIndex] == -1 || numBtns[ranIndex].IsLocked() || WouldCreateThreeInARow(ranIndex, value));
 
             SetNum(ranIndex, value);
         }
@@ -191,6 +192,39 @@ public class GameManager : MonoBehaviour, INumberProvider
             numBtns[i].GetComponentInChildren<Button>().onClick.AddListener(() => BtnOnClicked(index));
         }
         uiManager.UpdateUI();
+
+        // Challenge 모드: challengeNum에 따라 버튼 잠금
+        LockButtonsForChallenge();
+    }
+
+    void LockButtonsForChallenge()
+    {
+        int challengeNum = GameDataTransfer.GetChallengeNum();
+
+        if (challengeNum <= 0) return; // 챌린지가 없으면 리턴
+
+        Debug.Log($"Locking {challengeNum} buttons for challenge mode");
+
+        // 잠글 버튼들의 인덱스를 저장할 리스트
+        List<int> availableIndices = new List<int>();
+        for (int i = 0; i < totalCells; i++)
+        {
+            availableIndices.Add(i);
+        }
+
+        // 랜덤하게 challengeNum만큼의 버튼을 선택하여 잠금
+        for (int i = 0; i < challengeNum && availableIndices.Count > 0; i++)
+        {
+            int randomIndex = Random.Range(0, availableIndices.Count);
+            int buttonIndex = availableIndices[randomIndex];
+
+            // 버튼 잠금
+            numBtns[buttonIndex].LockButton();
+            numSet[buttonIndex] = -1; // numSet도 -1로 설정
+
+            availableIndices.RemoveAt(randomIndex);
+            Debug.Log($"Locked button at index: {buttonIndex}");
+        }
     }
 
     bool WouldCreateThreeInARow(int index, int value)
@@ -249,15 +283,22 @@ public class GameManager : MonoBehaviour, INumberProvider
         uiManager.nowScoreTxt.text = nowScore.ToString();
 
         int filledCount = 0;
+        int lockedCount = 0;
+
         for (int a = 0; a < totalCells; a++)
         {
-            if (numSet[a] != 0)
+            if (numSet[a] == -1 || numBtns[a].IsLocked())
+            {
+                lockedCount++;
+            }
+            else if (numSet[a] != 0)
             {
                 filledCount++;
             }
         }
 
-        if (filledCount >= totalCells)
+        // 잠긴 칸을 제외한 모든 칸이 채워졌는지 확인
+        if (filledCount + lockedCount >= totalCells)
         {
             GameOver();
         }
@@ -277,61 +318,60 @@ public class GameManager : MonoBehaviour, INumberProvider
         {
             int a = Random.Range(0, 4);
             if (a == 3)
+            {
                 result = 4;
-            else
-                result = 2;
+            }
+            else result = 2;
         }
         else if (highScore == 16)
         {
-            int a = Random.Range(0, 5);
-            if (a == 4)
-                result = 4;
-            else
-                result = 2;
+            int a = Random.Range(0, 100);
+            if (a <= 65) result = 2;
+            else if (a > 65 && a <= 90) result = 4;
+            else result = 8;
         }
         else if (highScore == 32)
         {
-            int a = Random.Range(0, 6);
-            if (a == 5)
-                result = 8;
-            else if (a == 4)
-                result = 4;
-            else
-                result = 2;
+            int a = Random.Range(0, 100);
+            if (a <= 50) result = 2;
+            else if (a > 50 && a <= 87) result = 4;
+            else if (a > 87 && a <= 97) result = 8;
+            else result = 16;
         }
         else if (highScore == 64)
         {
-            int a = Random.Range(0, 7);
-            if (a == 6)
-                result = 8;
-            else if (a == 5)
-                result = 4;
-            else
-                result = 2;
+            int a = Random.Range(0, 100);
+            if (a <= 45) result = 2;
+            else if (a > 45 && a <= 80) result = 4;
+            else if (a > 80 && a <= 94) result = 8;
+            else result = 16;
         }
         else if (highScore == 128)
         {
-            int a = Random.Range(0, 8);
-            if (a == 7)
-                result = 16;
-            else if (a == 6)
-                result = 8;
-            else if (a == 5)
-                result = 4;
-            else
-                result = 2;
+            int a = Random.Range(0, 100);
+            if (a <= 40) result = 2;
+            else if (a > 40 && a <= 75) result = 4;
+            else if (a > 75 && a <= 91) result = 8;
+            else if (a > 91 && a <= 98) result = 16;
+            else result = 32;
         }
-        else if (highScore >= 256)
+        else if (highScore == 256)
         {
-            int a = Random.Range(0, 9);
-            if (a == 8)
-                result = 16;
-            else if (a == 7)
-                result = 8;
-            else if (a == 6)
-                result = 4;
-            else
-                result = 2;
+            int a = Random.Range(0, 100);
+            if (a <= 35) result = 2;
+            else if (a > 35 && a <= 62) result = 4;
+            else if (a > 62 && a <= 85) result = 8;
+            else if (a > 85 && a <= 96) result = 16;
+            else result = 32;
+        }
+        else if (highScore > 256)
+        {
+            int a = Random.Range(0, 100);
+            if (a <= 40) result = 2;
+            else if (a > 40 && a <= 62) result = 4;
+            else if (a > 62 && a <= 79) result = 8;
+            else if (a > 79 && a <= 92) result = 16;
+            else result = 32;
         }
 
         return result;
@@ -449,6 +489,13 @@ public class GameManager : MonoBehaviour, INumberProvider
     public void BtnOnClicked(int index)
     {
         if (isAnimating) return;
+
+        // 잠긴 버튼은 클릭 불가
+        if (numBtns[index].IsLocked() || numSet[index] == -1)
+        {
+            Debug.Log($"Button {index} is locked and cannot be clicked");
+            return;
+        }
 
         if (isEraseMode)
         {
@@ -657,28 +704,32 @@ public class GameManager : MonoBehaviour, INumberProvider
         int row = pos / gridSize;
         int col = pos % gridSize;
 
-        if (col > 0 && !visited[pos - 1] && numBtns[pos - 1].ReturnNum() == nowNum)
+        // 왼쪽 체크 (잠긴 버튼 제외)
+        if (col > 0 && !visited[pos - 1] && numBtns[pos - 1].ReturnNum() == nowNum && !numBtns[pos - 1].IsLocked() && numSet[pos - 1] != -1)
         {
             sameCount++;
             sameCountTemp++;
             visited[pos - 1] = true;
             sameSpaceNum[sameCount] = pos - 1;
         }
-        if (col < gridSize - 1 && !visited[pos + 1] && numBtns[pos + 1].ReturnNum() == nowNum)
+        // 오른쪽 체크 (잠긴 버튼 제외)
+        if (col < gridSize - 1 && !visited[pos + 1] && numBtns[pos + 1].ReturnNum() == nowNum && !numBtns[pos + 1].IsLocked() && numSet[pos + 1] != -1)
         {
             sameCount++;
             sameCountTemp++;
             visited[pos + 1] = true;
             sameSpaceNum[sameCount] = pos + 1;
         }
-        if (row > 0 && !visited[pos - gridSize] && numBtns[pos - gridSize].ReturnNum() == nowNum)
+        // 위쪽 체크 (잠긴 버튼 제외)
+        if (row > 0 && !visited[pos - gridSize] && numBtns[pos - gridSize].ReturnNum() == nowNum && !numBtns[pos - gridSize].IsLocked() && numSet[pos - gridSize] != -1)
         {
             sameCount++;
             sameCountTemp++;
             visited[pos - gridSize] = true;
             sameSpaceNum[sameCount] = pos - gridSize;
         }
-        if (row < gridSize - 1 && !visited[pos + gridSize] && numBtns[pos + gridSize].ReturnNum() == nowNum)
+        // 아래쪽 체크 (잠긴 버튼 제외)
+        if (row < gridSize - 1 && !visited[pos + gridSize] && numBtns[pos + gridSize].ReturnNum() == nowNum && !numBtns[pos + gridSize].IsLocked() && numSet[pos + gridSize] != -1)
         {
             sameCount++;
             sameCountTemp++;
