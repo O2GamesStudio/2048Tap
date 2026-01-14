@@ -7,6 +7,11 @@ public class Tutorial : MonoBehaviour
     [SerializeField] Button preBtn, nextBtn, exitBtn;
     [SerializeField] Image tutorialImage;
     [SerializeField] Sprite[] tutorialSprites;
+    [SerializeField] Image[] tutorialIndexImages;
+
+    [Header("Index Indicator Colors")]
+    [SerializeField] Color activeColor = Color.white;
+    [SerializeField] Color inactiveColor = Color.gray;
 
     private int currentIndex = 0;
     private const string TUTORIAL_KEY = "HasSeenTutorial";
@@ -20,7 +25,6 @@ public class Tutorial : MonoBehaviour
 
     void Start()
     {
-        // 튜토리얼을 본 적이 없으면 자동으로 표시
         if (!HasSeenTutorial())
         {
             ShowTutorial();
@@ -36,11 +40,11 @@ public class Tutorial : MonoBehaviour
         currentIndex = 0;
         UpdateTutorialImage();
         UpdateButtonStates();
+        UpdateIndexIndicators();
     }
 
     void ExitOnClick()
     {
-        // 튜토리얼을 본 것으로 표시
         MarkTutorialAsSeen();
         gameObject.SetActive(false);
 
@@ -55,6 +59,7 @@ public class Tutorial : MonoBehaviour
             currentIndex--;
             UpdateTutorialImage();
             UpdateButtonStates();
+            UpdateIndexIndicators();
 
             if (SoundManager.Instance != null)
                 SoundManager.Instance.PlayUIBtnClickSFX();
@@ -68,6 +73,7 @@ public class Tutorial : MonoBehaviour
             currentIndex++;
             UpdateTutorialImage();
             UpdateButtonStates();
+            UpdateIndexIndicators();
 
             if (SoundManager.Instance != null)
                 SoundManager.Instance.PlayUIBtnClickSFX();
@@ -84,16 +90,28 @@ public class Tutorial : MonoBehaviour
 
     void UpdateButtonStates()
     {
-        // 첫 번째 이미지일 때 이전 버튼 비활성화
         if (preBtn != null)
         {
             preBtn.interactable = currentIndex > 0;
         }
 
-        // 마지막 이미지일 때 다음 버튼 비활성화
         if (nextBtn != null)
         {
             nextBtn.interactable = currentIndex < tutorialSprites.Length - 1;
+        }
+    }
+
+    void UpdateIndexIndicators()
+    {
+        if (tutorialIndexImages == null || tutorialIndexImages.Length == 0)
+            return;
+
+        for (int i = 0; i < tutorialIndexImages.Length; i++)
+        {
+            if (tutorialIndexImages[i] != null)
+            {
+                tutorialIndexImages[i].color = (i == currentIndex) ? activeColor : inactiveColor;
+            }
         }
     }
 
@@ -103,6 +121,7 @@ public class Tutorial : MonoBehaviour
         currentIndex = 0;
         UpdateTutorialImage();
         UpdateButtonStates();
+        UpdateIndexIndicators();
     }
 
     bool HasSeenTutorial()
@@ -116,7 +135,6 @@ public class Tutorial : MonoBehaviour
         PlayerPrefs.Save();
     }
 
-    // 튜토리얼을 다시 볼 수 있도록 리셋하는 함수 (설정에서 사용 가능)
     public static void ResetTutorial()
     {
         PlayerPrefs.DeleteKey(TUTORIAL_KEY);

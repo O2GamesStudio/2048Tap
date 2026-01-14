@@ -33,6 +33,7 @@ public class UIManager : MonoBehaviour
     [SerializeField] Button eraseBtn;
     [SerializeField] Button restoreBtn;
     [SerializeField] Image eraseBtnImage;
+    [SerializeField] Button tutorialBtn;
     Image restoreBtnImage;
 
     [SerializeField] GameObject settingPanel;
@@ -64,6 +65,7 @@ public class UIManager : MonoBehaviour
         else Destroy(gameObject);
 
         settingBtn.onClick.AddListener(SettingOnClick);
+        tutorialBtn.onClick.AddListener(PlayTutorial);
     }
 
     void Start()
@@ -92,7 +94,10 @@ public class UIManager : MonoBehaviour
             plusScoreTxt.gameObject.SetActive(false);
         }
     }
-
+    void PlayTutorial()
+    {
+        GameManager.Instance.tutorial.gameObject.SetActive(true);
+    }
     void InitializeComboImages()
     {
         if (combo8Image != null) combo8Image.gameObject.SetActive(false);

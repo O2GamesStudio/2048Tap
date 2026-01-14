@@ -12,7 +12,7 @@ public class GameManager : MonoBehaviour, INumberProvider
     public static GameManager Instance { get; private set; }
     SoundManager soundManager;
     UIManager uiManager;
-    [SerializeField] Tutorial tutorial;
+    public Tutorial tutorial;
 
     [Header("Grid Settings")]
     [SerializeField] int gridSize = 5;
