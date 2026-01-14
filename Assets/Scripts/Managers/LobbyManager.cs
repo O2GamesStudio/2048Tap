@@ -24,6 +24,9 @@ public class LobbyManager : MonoBehaviour
     [Header("Layout Manager")]
     [SerializeField] LobbyLayoutManager layoutManager;
 
+    [Header("Challenge")]
+    [SerializeField] Challenge challenge;
+
     [Header("Animation Settings")]
     [SerializeField] float slideDistance = 1000f;
     [SerializeField] float slideDuration = 0.5f;
@@ -40,7 +43,6 @@ public class LobbyManager : MonoBehaviour
 
     void Awake()
     {
-        // maxChapterNum은 마지막 챕터의 인덱스여야 함 (배열 길이 - 1)
         maxChapterNum = chapterImages.Length - 1;
 
         gameStartBtn.onClick.AddListener(() => StartOnClick());
@@ -50,9 +52,15 @@ public class LobbyManager : MonoBehaviour
 
         InitializeChapterPositions();
     }
+
     void Start()
     {
         SoundManager.Instance.PlayBGM();
+
+        if (challenge != null)
+        {
+            challenge.SetLobbyManager(this);
+        }
 
         UpdateHighScoreUI(chapterNum);
         UpdateButtonStates();
@@ -64,6 +72,7 @@ public class LobbyManager : MonoBehaviour
             layoutManager.UpdateChallengeSetVisibility(chapterNum);
         }
     }
+
     void SettingOnClick()
     {
         settingPanel.SetActive(true);
@@ -92,6 +101,7 @@ public class LobbyManager : MonoBehaviour
             }
         }
     }
+
     IEnumerator BtnClickAnim(int dir)
     {
         if (dir == -1)
@@ -106,13 +116,13 @@ public class LobbyManager : MonoBehaviour
             yield return new WaitForSeconds(0.1f);
             nextChapterBtn.transform.DOScale(Vector3.one, 0.1f);
         }
-
     }
+
     void ChapterMoveOnClick(int dir)
     {
         if (isAnimating) return;
 
-        if (dir == -1) //이전 챕터로 이동
+        if (dir == -1)
         {
             if (chapterNum <= 0) return;
 
@@ -135,7 +145,7 @@ public class LobbyManager : MonoBehaviour
 
             SlideChapters(oldChapterNum, chapterNum);
         }
-        else if (dir == 1) // 다음 챕터로 이동
+        else if (dir == 1)
         {
             if (chapterNum >= maxChapterNum) return;
 
@@ -162,7 +172,6 @@ public class LobbyManager : MonoBehaviour
 
     void SlideChapters(int fromIndex, int toIndex)
     {
-        // 배열 범위 체크
         if (fromIndex < 0 || fromIndex >= chapterImages.Length ||
             toIndex < 0 || toIndex >= chapterImages.Length)
         {
@@ -175,18 +184,14 @@ public class LobbyManager : MonoBehaviour
         RectTransform fromRect = chapterImages[fromIndex].GetComponent<RectTransform>();
         RectTransform toRect = chapterImages[toIndex].GetComponent<RectTransform>();
 
-        // 이동 방향 결정
         float fromEndX = toIndex > fromIndex ? -slideDistance : slideDistance;
 
-        // 메인 Sequence 생성
         Sequence mainSequence = DOTween.Sequence();
 
-        // 1단계: 중앙 이미지 스케일 축소
         mainSequence.Append(
             fromRect.DOScale(sideScale, scaleDuration).SetEase(scaleEase)
         );
 
-        // 2단계: 위치 이동 애니메이션 (스케일 축소 후)
         mainSequence.Append(
             fromRect.DOAnchorPosX(fromEndX, slideDuration).SetEase(slideEase)
         );
@@ -194,7 +199,6 @@ public class LobbyManager : MonoBehaviour
             toRect.DOAnchorPosX(0, slideDuration).SetEase(slideEase)
         );
 
-        // 3단계: 중앙으로 온 이미지 스케일 확대 (이동 완료 후)
         mainSequence.Append(
             toRect.DOScale(centerScale, scaleDuration).SetEase(scaleEase)
         );
@@ -211,12 +215,28 @@ public class LobbyManager : MonoBehaviour
     void UpdateHighScoreUI(int chapterNum)
     {
         int gridSize = (chapterNum == 0) ? 4 : 5;
-        string highScoreKey = $"HighScore_{gridSize}x{gridSize}";
-        int highScore = PlayerPrefs.GetInt(highScoreKey, 0);
 
-        if (highScoreText != null)
+        if (challenge != null)
         {
-            highScoreText.text = highScore.ToString();
+            int challengeNum = challenge.GetChallengeNum();
+            string challengeHighScoreKey = $"HighScore_{gridSize}x{gridSize}_Challenge{challengeNum}";
+            int challengeHighScore = PlayerPrefs.GetInt(challengeHighScoreKey, 0);
+            Debug.Log(challengeHighScore);
+
+            if (highScoreText != null)
+            {
+                highScoreText.text = challengeHighScore.ToString();
+            }
+        }
+        else
+        {
+            string highScoreKey = $"HighScore_{gridSize}x{gridSize}";
+            int highScore = PlayerPrefs.GetInt(highScoreKey, 0);
+
+            if (highScoreText != null)
+            {
+                highScoreText.text = highScore.ToString();
+            }
         }
     }
 
@@ -237,26 +257,22 @@ public class LobbyManager : MonoBehaviour
 
         if (startBtnImage != null && startSprites != null && startSprites.Length >= 2)
         {
-            // 잠금 상태에 따라 스프라이트 변경 (0: unlock, 1: lock)
             startBtnImage.sprite = isLocked ? startSprites[1] : startSprites[0];
         }
 
         if (gameStartBtn != null)
         {
-            // 잠긴 챕터는 버튼 비활성화
             gameStartBtn.interactable = !isLocked;
         }
     }
 
     void UpdateButtonStates()
     {
-        // 이전 버튼 상태
         if (preChapterBtn != null)
         {
             preChapterBtn.interactable = (chapterNum > 0);
         }
 
-        // 다음 버튼 상태
         if (nextChapterBtn != null)
         {
             nextChapterBtn.interactable = (chapterNum < maxChapterNum);
@@ -265,11 +281,15 @@ public class LobbyManager : MonoBehaviour
 
     void StartOnClick()
     {
-        // 잠긴 챕터는 시작 불가
         if (IsChapterLocked(chapterNum))
         {
             Debug.Log("This chapter is locked!");
             return;
+        }
+
+        if (challenge != null)
+        {
+            challenge.OnStartGameClick();
         }
 
         SoundManager.Instance.PlayUIBtnClickSFX();
@@ -278,7 +298,11 @@ public class LobbyManager : MonoBehaviour
 
     void OnDestroy()
     {
-        // DOTween 정리
         DOTween.Kill(this);
+    }
+
+    public void OnChallengeChanged()
+    {
+        UpdateHighScoreUI(chapterNum);
     }
 }

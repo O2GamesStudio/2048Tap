@@ -6,7 +6,7 @@ using UnityEngine.SceneManagement;
 public class Challenge : MonoBehaviour
 {
     [SerializeField] Button plusBtn, minusBtn;
-    [SerializeField] Button startGameBtn; // 게임 시작 버튼 (옵션, Inspector에서 설정)
+    [SerializeField] Button startGameBtn;
     [SerializeField] TextMeshProUGUI challengeText;
     public int challengeNum;
 
@@ -14,12 +14,13 @@ public class Challenge : MonoBehaviour
     [SerializeField] int maxChallengeNum = 4;
     [SerializeField] int minChallengeNum = 0;
 
+    private LobbyManager lobbyManager;
+
     void Awake()
     {
         plusBtn.onClick.AddListener(PlusOnClick);
         minusBtn.onClick.AddListener(MinusOnClick);
 
-        // 게임 시작 버튼이 있으면 리스너 추가
         if (startGameBtn != null)
         {
             startGameBtn.onClick.AddListener(OnStartGameClick);
@@ -28,9 +29,14 @@ public class Challenge : MonoBehaviour
 
     void Start()
     {
-        // 초기 UI 업데이트
+        lobbyManager = FindObjectOfType<LobbyManager>();
         UpdateUI();
         UpdateButtonStates();
+    }
+
+    public void SetLobbyManager(LobbyManager manager)
+    {
+        lobbyManager = manager;
     }
 
     void UpdateUI()
@@ -62,6 +68,11 @@ public class Challenge : MonoBehaviour
             UpdateUI();
             UpdateButtonStates();
 
+            if (lobbyManager != null)
+            {
+                lobbyManager.OnChallengeChanged();
+            }
+
             if (SoundManager.Instance != null)
             {
                 SoundManager.Instance.PlayUIBtnClickSFX();
@@ -77,6 +88,11 @@ public class Challenge : MonoBehaviour
             UpdateUI();
             UpdateButtonStates();
 
+            if (lobbyManager != null)
+            {
+                lobbyManager.OnChallengeChanged();
+            }
+
             if (SoundManager.Instance != null)
             {
                 SoundManager.Instance.PlayUIBtnClickSFX();
@@ -89,6 +105,11 @@ public class Challenge : MonoBehaviour
         challengeNum = Mathf.Clamp(value, minChallengeNum, maxChallengeNum);
         UpdateUI();
         UpdateButtonStates();
+
+        if (lobbyManager != null)
+        {
+            lobbyManager.OnChallengeChanged();
+        }
     }
 
     public int GetChallengeNum()
@@ -96,17 +117,10 @@ public class Challenge : MonoBehaviour
         return challengeNum;
     }
 
-    // 게임 시작 버튼 클릭 시 호출되는 메서드
-    // 다른 스크립트에서도 이 메서드를 호출할 수 있습니다
     public void OnStartGameClick()
     {
-        // GameDataTransfer에 challengeNum 저장
         GameDataTransfer.SetChallengeNum(challengeNum);
-
         Debug.Log($"Starting game with challenge number: {challengeNum}");
-
-        // 게임 씬으로 전환 (씬 이름은 프로젝트에 맞게 수정하세요)
-        // SceneManager.LoadScene("GameScene");
 
         if (SoundManager.Instance != null)
         {

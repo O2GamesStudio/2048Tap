@@ -45,7 +45,6 @@ public class VFXManager : MonoBehaviour
             }
         }
 
-        Debug.Log($"VFXManager 초기화 완료 - {combineParticlePrefabs.Length}개 타입의 파티클 풀 생성");
     }
 
     ParticleSystem CreateNewParticle(int prefabIndex)
@@ -95,7 +94,6 @@ public class VFXManager : MonoBehaviour
             return particle;
         }
 
-        Debug.LogWarning("파티클 풀 최대 크기 도달 - 가장 오래된 파티클 재사용");
         particle = activeParticles[0];
         particle.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
         return particle;

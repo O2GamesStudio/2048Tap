@@ -123,7 +123,10 @@ public class GameManager : MonoBehaviour, INumberProvider
             restoreBtn.onClick.AddListener(RestoreLastAction);
 
         InitGame();
-        uiManager.highScoreTxt.text = PlayerPrefs.GetInt($"HighScore_{gridSize}x{gridSize}").ToString();
+
+        int challengeNum = GameDataTransfer.GetChallengeNum();
+        string highScoreKey = $"HighScore_{gridSize}x{gridSize}_Challenge{challengeNum}";
+        uiManager.highScoreTxt.text = PlayerPrefs.GetInt(highScoreKey, 0).ToString();
 
         UpdateItemButtons();
 
@@ -309,6 +312,7 @@ public class GameManager : MonoBehaviour, INumberProvider
         numSet[index] = val;
         numBtns[index].SetNumText(val);
     }
+
 
     int GenerateNextNum()
     {
@@ -857,7 +861,8 @@ public class GameManager : MonoBehaviour, INumberProvider
     void GameOver()
     {
         Debug.Log("GameOver");
-        string highScoreKey = $"HighScore_{gridSize}x{gridSize}";
+        int challengeNum = GameDataTransfer.GetChallengeNum();
+        string highScoreKey = $"HighScore_{gridSize}x{gridSize}_Challenge{challengeNum}";
         if (PlayerPrefs.GetInt(highScoreKey) <= nowScore)
         {
             PlayerPrefs.SetInt(highScoreKey, nowScore);
