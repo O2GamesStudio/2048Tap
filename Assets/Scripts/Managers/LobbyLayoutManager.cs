@@ -40,6 +40,10 @@ public class LobbyLayoutManager : MonoBehaviour
     [SerializeField] float cellSpacing = 10f;
     [SerializeField] float gridPadding = 20f;
 
+    [Header("Configuration")]
+    [SerializeField]
+    ChapterUnlockConfig unlockConfig;
+
     private Vector2 lastCanvasSize;
     float timer = 0f;
 
@@ -220,16 +224,23 @@ public class LobbyLayoutManager : MonoBehaviour
 
     bool IsChapterLocked(int chapterIndex)
     {
-        // 첫 번째 챕터(0)는 항상 unlock
         if (chapterIndex == 0) return false;
 
-        // 이전 챕터의 최고 점수가 1000점 이상이어야 다음 챕터 unlock
-        int prevGridSize = (chapterIndex - 1 == 0) ? 4 : 5;
-        string prevHighScoreKey = $"HighScore_{prevGridSize}x{prevGridSize}";
-        int prevHighScore = PlayerPrefs.GetInt(prevHighScoreKey, 0);
+        if (chapterIndex == 1)
+        {
+            string prevHighScoreKey = "HighScore_4x4";
+            int prevHighScore = PlayerPrefs.GetInt(prevHighScoreKey, 0);
+            return prevHighScore < unlockConfig.chapter1UnlockScore; // 수정
+        }
 
-        // 이전 챕터에서 1000점 이상을 얻어야 unlock
-        return prevHighScore < 1000;
+        if (chapterIndex == 2)
+        {
+            string prevHighScoreKey = "HighScore_5x5";
+            int prevHighScore = PlayerPrefs.GetInt(prevHighScoreKey, 0);
+            return prevHighScore < unlockConfig.chapter2UnlockScore; // 수정
+        }
+
+        return false;
     }
 
     public void RefreshLockPanels()
@@ -237,28 +248,19 @@ public class LobbyLayoutManager : MonoBehaviour
         UpdateLockPanels();
     }
 
-    /// <summary>
-    /// ChallengeSet의 활성화 상태를 업데이트합니다.
-    /// 5x5 게임(chapterNum == 1)이 선택되었고, 5x5의 highscore가 3000 이상일 때만 활성화됩니다.
-    /// </summary>
-    /// <param name="currentChapterNum">현재 선택된 챕터 번호 (0: 4x4, 1: 5x5)</param>
     public void UpdateChallengeSetVisibility(int currentChapterNum)
     {
         if (challengeSet == null) return;
 
-        // 5x5 게임이 선택되었는지 확인 (chapterNum == 1)
         if (currentChapterNum == 1)
         {
-            // 5x5의 최고 점수 확인
             string highScoreKey = "HighScore_5x5";
             int highScore = PlayerPrefs.GetInt(highScoreKey, 0);
 
-            // 3000점 이상일 때만 활성화
-            challengeSet.gameObject.SetActive(highScore >= 3000);
+            challengeSet.gameObject.SetActive(highScore >= 7000);
         }
         else
         {
-            // 5x5가 아닌 경우 비활성화
             challengeSet.gameObject.SetActive(false);
         }
     }

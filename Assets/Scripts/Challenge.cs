@@ -8,11 +8,14 @@ public class Challenge : MonoBehaviour
     [SerializeField] Button plusBtn, minusBtn;
     [SerializeField] Button startGameBtn;
     [SerializeField] TextMeshProUGUI challengeText;
-    public int challengeNum;
+    public int challengeNum = 1;
 
     [Header("Challenge Settings")]
     [SerializeField] int maxChallengeNum = 4;
-    [SerializeField] int minChallengeNum = 0;
+    [SerializeField] int minChallengeNum = 1;
+
+    [Header("Visual Feedback")]
+    [SerializeField] GameObject[] crackImages;
 
     private LobbyManager lobbyManager;
 
@@ -20,18 +23,18 @@ public class Challenge : MonoBehaviour
     {
         plusBtn.onClick.AddListener(PlusOnClick);
         minusBtn.onClick.AddListener(MinusOnClick);
-
-        if (startGameBtn != null)
-        {
-            startGameBtn.onClick.AddListener(OnStartGameClick);
-        }
     }
 
     void Start()
     {
-        lobbyManager = FindObjectOfType<LobbyManager>();
+        if (challengeNum < minChallengeNum)
+        {
+            challengeNum = minChallengeNum;
+        }
+
         UpdateUI();
         UpdateButtonStates();
+        UpdateCrackImages(); // 초기 크랙 이미지 설정
     }
 
     public void SetLobbyManager(LobbyManager manager)
@@ -44,6 +47,21 @@ public class Challenge : MonoBehaviour
         if (challengeText != null)
         {
             challengeText.text = $"x{challengeNum}";
+        }
+
+        UpdateCrackImages(); // UI 업데이트 시 크랙 이미지도 업데이트
+    }
+
+    void UpdateCrackImages()
+    {
+        if (crackImages == null || crackImages.Length == 0) return;
+
+        for (int i = 0; i < crackImages.Length; i++)
+        {
+            if (crackImages[i] != null)
+            {
+                crackImages[i].SetActive(i < challengeNum);
+            }
         }
     }
 
@@ -120,8 +138,6 @@ public class Challenge : MonoBehaviour
     public void OnStartGameClick()
     {
         GameDataTransfer.SetChallengeNum(challengeNum);
-        Debug.Log($"Starting game with challenge number: {challengeNum}");
-
         if (SoundManager.Instance != null)
         {
             SoundManager.Instance.PlayUIBtnClickSFX();

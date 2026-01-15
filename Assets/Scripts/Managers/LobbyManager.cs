@@ -19,6 +19,7 @@ public class LobbyManager : MonoBehaviour
 
     [Header("Text UI")]
     [SerializeField] TextMeshProUGUI chapterText;
+    [SerializeField] TextMeshProUGUI challengeText;
     [SerializeField] TextMeshProUGUI highScoreText;
 
     [Header("Layout Manager")]
@@ -40,6 +41,9 @@ public class LobbyManager : MonoBehaviour
     [SerializeField] GameObject settingPanel;
     [SerializeField] int maxChapterNum = 1;
     bool isAnimating = false;
+
+    [Header("Configuration")]
+    [SerializeField] ChapterUnlockConfig unlockConfig;
 
     void Awake()
     {
@@ -69,7 +73,7 @@ public class LobbyManager : MonoBehaviour
         if (layoutManager != null)
         {
             layoutManager.RefreshLockPanels();
-            layoutManager.UpdateChallengeSetVisibility(chapterNum);
+            layoutManager.UpdateChallengeSetVisibility(chapterNum == 2 ? 1 : 0);
         }
     }
 
@@ -140,7 +144,8 @@ public class LobbyManager : MonoBehaviour
             if (layoutManager != null)
             {
                 layoutManager.RefreshLockPanels();
-                layoutManager.UpdateChallengeSetVisibility(chapterNum);
+                // Challenge UI는 Chapter 2에서만 표시
+                layoutManager.UpdateChallengeSetVisibility(chapterNum == 2 ? 1 : 0);
             }
 
             SlideChapters(oldChapterNum, chapterNum);
@@ -163,13 +168,12 @@ public class LobbyManager : MonoBehaviour
             if (layoutManager != null)
             {
                 layoutManager.RefreshLockPanels();
-                layoutManager.UpdateChallengeSetVisibility(chapterNum);
+                layoutManager.UpdateChallengeSetVisibility(chapterNum == 2 ? 1 : 0);
             }
 
             SlideChapters(oldChapterNum, chapterNum);
         }
     }
-
     void SlideChapters(int fromIndex, int toIndex)
     {
         if (fromIndex < 0 || fromIndex >= chapterImages.Length ||
@@ -208,47 +212,67 @@ public class LobbyManager : MonoBehaviour
 
     void UpdateChapterTextUI(int chapterNum)
     {
-        if (chapterNum == 0) chapterText.text = "4x4";
-        else if (chapterNum == 1) chapterText.text = "5x5";
+        if (chapterNum == 0)
+        {
+            chapterText.text = "4x4";
+            challengeText.gameObject.SetActive(false);
+        }
+        else if (chapterNum == 1)
+        {
+            chapterText.text = "5x5";
+            challengeText.gameObject.SetActive(false);
+        }
+        else if (chapterNum == 2)
+        {
+            chapterText.text = "5x5";
+            challengeText.gameObject.SetActive(true);
+        }
     }
 
     void UpdateHighScoreUI(int chapterNum)
     {
         int gridSize = (chapterNum == 0) ? 4 : 5;
+        string highScoreKey;
 
-        if (challenge != null)
+        if (chapterNum == 2 && challenge != null)
         {
             int challengeNum = challenge.GetChallengeNum();
-            string challengeHighScoreKey = $"HighScore_{gridSize}x{gridSize}_Challenge{challengeNum}";
-            int challengeHighScore = PlayerPrefs.GetInt(challengeHighScoreKey, 0);
-            Debug.Log(challengeHighScore);
-
-            if (highScoreText != null)
-            {
-                highScoreText.text = challengeHighScore.ToString();
-            }
+            highScoreKey = $"HighScore_5x5_Challenge{challengeNum}";
         }
         else
         {
-            string highScoreKey = $"HighScore_{gridSize}x{gridSize}";
-            int highScore = PlayerPrefs.GetInt(highScoreKey, 0);
+            highScoreKey = $"HighScore_{gridSize}x{gridSize}";
+        }
 
-            if (highScoreText != null)
-            {
-                highScoreText.text = highScore.ToString();
-            }
+        int highScore = PlayerPrefs.GetInt(highScoreKey, 0);
+        Debug.Log($"Loading high score for chapter {chapterNum}: {highScoreKey} = {highScore}");
+
+        if (highScoreText != null)
+        {
+            highScoreText.text = highScore.ToString();
         }
     }
+
 
     bool IsChapterLocked(int chapterNum)
     {
         if (chapterNum == 0) return false;
 
-        int prevGridSize = (chapterNum - 1 == 0) ? 4 : 5;
-        string prevHighScoreKey = $"HighScore_{prevGridSize}x{prevGridSize}";
-        int prevHighScore = PlayerPrefs.GetInt(prevHighScoreKey, 0);
+        if (chapterNum == 1)
+        {
+            string prevHighScoreKey = "HighScore_4x4";
+            int prevHighScore = PlayerPrefs.GetInt(prevHighScoreKey, 0);
+            return prevHighScore < unlockConfig.chapter1UnlockScore;
+        }
 
-        return prevHighScore < 2000;
+        if (chapterNum == 2)
+        {
+            string prevHighScoreKey = "HighScore_5x5";
+            int prevHighScore = PlayerPrefs.GetInt(prevHighScoreKey, 0);
+            return prevHighScore < unlockConfig.chapter2UnlockScore;
+        }
+
+        return false;
     }
 
     void UpdateStartButton()
@@ -287,13 +311,19 @@ public class LobbyManager : MonoBehaviour
             return;
         }
 
-        if (challenge != null)
+        if (chapterNum == 2 && challenge != null)
         {
             challenge.OnStartGameClick();
         }
+        else
+        {
+            GameDataTransfer.SetChallengeNum(0);
+        }
 
         SoundManager.Instance.PlayUIBtnClickSFX();
-        SceneManager.LoadScene(chapterNum + 1);
+
+        int sceneIndex = (chapterNum == 0) ? 1 : 2;
+        SceneManager.LoadScene(sceneIndex);
     }
 
     void OnDestroy()

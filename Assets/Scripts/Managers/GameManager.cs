@@ -125,8 +125,19 @@ public class GameManager : MonoBehaviour, INumberProvider
         InitGame();
 
         int challengeNum = GameDataTransfer.GetChallengeNum();
-        string highScoreKey = $"HighScore_{gridSize}x{gridSize}_Challenge{challengeNum}";
+        string highScoreKey;
+
+        if (challengeNum > 0)
+        {
+            highScoreKey = $"HighScore_{gridSize}x{gridSize}_Challenge{challengeNum}";
+        }
+        else
+        {
+            highScoreKey = $"HighScore_{gridSize}x{gridSize}";
+        }
+
         uiManager.highScoreTxt.text = PlayerPrefs.GetInt(highScoreKey, 0).ToString();
+        Debug.Log($"Game started with key: {highScoreKey}");
 
         UpdateItemButtons();
 
@@ -204,26 +215,23 @@ public class GameManager : MonoBehaviour, INumberProvider
     {
         int challengeNum = GameDataTransfer.GetChallengeNum();
 
-        if (challengeNum <= 0) return; // 챌린지가 없으면 리턴
+        if (challengeNum <= 0) return; // 일반 모드면 리턴
 
         Debug.Log($"Locking {challengeNum} buttons for challenge mode");
 
-        // 잠글 버튼들의 인덱스를 저장할 리스트
         List<int> availableIndices = new List<int>();
         for (int i = 0; i < totalCells; i++)
         {
             availableIndices.Add(i);
         }
 
-        // 랜덤하게 challengeNum만큼의 버튼을 선택하여 잠금
         for (int i = 0; i < challengeNum && availableIndices.Count > 0; i++)
         {
             int randomIndex = Random.Range(0, availableIndices.Count);
             int buttonIndex = availableIndices[randomIndex];
 
-            // 버튼 잠금
             numBtns[buttonIndex].LockButton();
-            numSet[buttonIndex] = -1; // numSet도 -1로 설정
+            numSet[buttonIndex] = -1;
 
             availableIndices.RemoveAt(randomIndex);
             Debug.Log($"Locked button at index: {buttonIndex}");
@@ -861,12 +869,27 @@ public class GameManager : MonoBehaviour, INumberProvider
     void GameOver()
     {
         Debug.Log("GameOver");
+
         int challengeNum = GameDataTransfer.GetChallengeNum();
-        string highScoreKey = $"HighScore_{gridSize}x{gridSize}_Challenge{challengeNum}";
+        string highScoreKey;
+
+        if (challengeNum > 0)
+        {
+            highScoreKey = $"HighScore_{gridSize}x{gridSize}_Challenge{challengeNum}";
+        }
+        else
+        {
+            highScoreKey = $"HighScore_{gridSize}x{gridSize}";
+        }
+
+        Debug.Log($"Saving high score to key: {highScoreKey}");
+
         if (PlayerPrefs.GetInt(highScoreKey) <= nowScore)
         {
             PlayerPrefs.SetInt(highScoreKey, nowScore);
+            PlayerPrefs.Save();
         }
+
         uiManager.finalScoreTxt.text = nowScore.ToString();
 
         gameOverPanel.gameObject.SetActive(true);
