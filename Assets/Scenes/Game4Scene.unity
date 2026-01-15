@@ -5071,7 +5071,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::GameManager
   tutorial: {fileID: 736319934}
   gridSize: 4
-  blockSprite: {fileID: -7992731505575071818, guid: ae0052860c57e6b4f8427df575c512a3, type: 3}
+  blockSprite:
+  - {fileID: 21300000, guid: fc30f2416cf335d4dbec9d813a4a06df, type: 3}
+  - {fileID: 21300000, guid: ae0052860c57e6b4f8427df575c512a3, type: 3}
+  - {fileID: 21300000, guid: 0480255543d4fe342b12e527cc98025d, type: 3}
   _numberSprites:
   - {fileID: 21300000, guid: a1a56ca1e6877f04995cf1d26643f056, type: 3}
   - {fileID: 21300000, guid: ed7e6e339be122e418b57f42ec4b7770, type: 3}
@@ -7024,6 +7027,7 @@ MonoBehaviour:
   backgroundRect: {fileID: 1243467079}
   gridLayoutGroup: {fileID: 388461918}
   gridRect: {fileID: 388461917}
+  canvas: {fileID: 0}
   horizontalMargin: 50
   verticalMargin: 200
   gridSize: 4

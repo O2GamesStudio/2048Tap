@@ -19,9 +19,6 @@ public class GridLayoutManager : MonoBehaviour
     [Header("Offset")]
     [SerializeField] float gridYOffset = -100f;
 
-    private float lastUpdateTime;
-    private const float updateInterval = 0.5f;
-
     void Start()
     {
         // ★ Canvas 자동 찾기
@@ -32,18 +29,7 @@ public class GridLayoutManager : MonoBehaviour
 
         SetupAnchors();
         AdjustGridSize();
-        lastUpdateTime = Time.time;
     }
-
-    void Update()
-    {
-        if (Time.time - lastUpdateTime >= updateInterval)
-        {
-            AdjustGridSize();
-            lastUpdateTime = Time.time;
-        }
-    }
-
     void SetupAnchors()
     {
         if (backgroundRect != null)
@@ -63,15 +49,12 @@ public class GridLayoutManager : MonoBehaviour
 
     void AdjustGridSize()
     {
-        // ★ Canvas Rect 사용 (Screen 대신)
         RectTransform canvasRect = canvas.GetComponent<RectTransform>();
         float canvasWidth = canvasRect.rect.width;
         float canvasHeight = canvasRect.rect.height;
 
-        // ★ 로비와 동일한 방식
         float backgroundSize = canvasWidth - (horizontalMargin * 2);
 
-        // 세로 제한 확인
         float maxHeight = canvasHeight - (verticalMargin * 2) - Mathf.Abs(gridYOffset);
         if (backgroundSize > maxHeight)
         {

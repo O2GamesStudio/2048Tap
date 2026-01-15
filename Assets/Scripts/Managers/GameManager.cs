@@ -19,7 +19,7 @@ public class GameManager : MonoBehaviour, INumberProvider
     private int totalCells;
 
     public Sprite[] numberSprites { get { return _numberSprites; } }
-    public Sprite blockSprite;
+    public Sprite[] blockSprite;
     [SerializeField] private Sprite[] _numberSprites;
 
     [HideInInspector] public int nowNum { get; private set; }

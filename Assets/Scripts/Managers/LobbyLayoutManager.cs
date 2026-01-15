@@ -60,7 +60,6 @@ public class LobbyLayoutManager : MonoBehaviour
         AdjustLayout();
         UpdateLockPanels();
 
-        // 초기화 시 challengeSet 비활성화
         if (challengeSet != null)
         {
             challengeSet.gameObject.SetActive(false);

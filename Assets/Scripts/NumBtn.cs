@@ -170,7 +170,7 @@ public class NumBtn : MonoBehaviour
         {
             if (GameManager.Instance != null && GameManager.Instance.blockSprite != null)
             {
-                numImage.sprite = GameManager.Instance.blockSprite;
+                numImage.sprite = GameManager.Instance.blockSprite[0];
             }
             return;
         }

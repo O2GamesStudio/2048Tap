@@ -16,6 +16,7 @@ public class Challenge : MonoBehaviour
 
     [Header("Visual Feedback")]
     [SerializeField] GameObject[] crackImages;
+    [SerializeField] Sprite[] tileSprites;
 
     private LobbyManager lobbyManager;
 
@@ -48,20 +49,29 @@ public class Challenge : MonoBehaviour
         {
             challengeText.text = $"x{challengeNum}";
         }
-
-        UpdateCrackImages(); // UI 업데이트 시 크랙 이미지도 업데이트
+        UpdateCrackImages();
     }
 
     void UpdateCrackImages()
     {
         if (crackImages == null || crackImages.Length == 0) return;
+        if (tileSprites == null || tileSprites.Length < 2)
+        {
+            Debug.LogWarning("tileSprites가 부족합니다. 최소 2개 필요.");
+            return;
+        }
 
         for (int i = 0; i < crackImages.Length; i++)
         {
-            if (crackImages[i] != null)
-            {
-                crackImages[i].SetActive(i < challengeNum);
-            }
+            if (crackImages[i] == null || !crackImages[i])
+                continue;
+
+            Image imageComponent = crackImages[i].GetComponent<Image>();
+
+            if (imageComponent == null || !imageComponent)
+                continue;
+
+            imageComponent.sprite = (i < challengeNum) ? tileSprites[1] : tileSprites[0];
         }
     }
 
@@ -82,6 +92,7 @@ public class Challenge : MonoBehaviour
     {
         if (challengeNum < maxChallengeNum)
         {
+            Debug.Log("Plus");
             challengeNum++;
             UpdateUI();
             UpdateButtonStates();
@@ -102,6 +113,7 @@ public class Challenge : MonoBehaviour
     {
         if (challengeNum > minChallengeNum)
         {
+            Debug.Log("minus");
             challengeNum--;
             UpdateUI();
             UpdateButtonStates();
