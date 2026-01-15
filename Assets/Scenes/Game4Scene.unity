@@ -1759,10 +1759,10 @@ RectTransform:
   - {fileID: 1185339865}
   m_Father: {fileID: 1243467079}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 100, y: 100}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &388461918
 MonoBehaviour:
@@ -7025,9 +7025,11 @@ MonoBehaviour:
   gridLayoutGroup: {fileID: 388461918}
   gridRect: {fileID: 388461917}
   horizontalMargin: 50
+  verticalMargin: 200
   gridSize: 4
   cellSpacing: 20
   gridPadding: 20
+  gridYOffset: -100
 --- !u!1 &1424522031
 GameObject:
   m_ObjectHideFlags: 0
