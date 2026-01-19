@@ -22,15 +22,20 @@ public class GoogleAdsManager : MonoBehaviour
 
 #if UNITY_ANDROID
     private string rewardedAdUnitId = "ca-app-pub-3940256099942544/5224354917"; // 테스트 ID (출시 시 실제 ID로 변경)
+    private string bannerAdUnitId = "ca-app-pub-3940256099942544/6300978111"; // 배너 테스트 ID
     // private string rewardedAdUnitId = "ca-app-pub-3490273194196393/8703866303"; // 실제 ID
+    // private string bannerAdUnitId = "ca-app-pub-3490273194196393/4313652000"; // 실제 배너 ID로 변경
 #else
     private string rewardedAdUnitId = "ca-app-pub-3940256099942544/5224354917"; 
+    private string bannerAdUnitId = "ca-app-pub-3940256099942544/6300978111";
 #endif
 
     private RewardedAd rewardedAd;
+    private BannerView bannerView;
     private bool isAdLoaded = false;
     private bool isInitialized = false;
     private bool isLoadingAd = false;
+    private bool isBannerLoaded = false;
 
     public event Action OnRewardEarned;
     public event Action OnAdClosed;
@@ -53,7 +58,6 @@ public class GoogleAdsManager : MonoBehaviour
 
     private void OnEnable()
     {
-        // 씬이 로드될 때마다 광고 미리 로드
         UnityEngine.SceneManagement.SceneManager.sceneLoaded += OnSceneLoaded;
     }
 
@@ -64,7 +68,6 @@ public class GoogleAdsManager : MonoBehaviour
 
     private void OnSceneLoaded(UnityEngine.SceneManagement.Scene scene, UnityEngine.SceneManagement.LoadSceneMode mode)
     {
-        // 씬이 로드되면 광고가 없을 때 자동으로 로드
         if (!isAdLoaded && !isLoadingAd && isInitialized)
         {
             StartCoroutine(LoadAdWithDelay(0.5f));
@@ -94,6 +97,7 @@ public class GoogleAdsManager : MonoBehaviour
         LoadRewardedAd();
     }
 
+    #region 보상형 광고
     public void LoadRewardedAd()
     {
         if (isLoadingAd)
@@ -140,7 +144,6 @@ public class GoogleAdsManager : MonoBehaviour
                         Debug.LogError($"광고 로드 실패: {error?.GetMessage()}");
                         isAdLoaded = false;
                         OnAdFailedToLoad?.Invoke();
-                        // 실패 시 10초 후 재시도
                         StartCoroutine(LoadAdWithDelay(10f));
                         return;
                     }
@@ -155,7 +158,6 @@ public class GoogleAdsManager : MonoBehaviour
         {
             isLoadingAd = false;
             Debug.LogError($"광고 로드 예외: {e.Message}");
-            // 예외 발생 시 10초 후 재시도
             StartCoroutine(LoadAdWithDelay(10f));
         }
     }
@@ -172,7 +174,6 @@ public class GoogleAdsManager : MonoBehaviour
             Debug.Log("광고 닫힘");
             isAdLoaded = false;
             OnAdClosed?.Invoke();
-            // 광고가 닫힌 후 즉시 다음 광고 로드
             StartCoroutine(LoadAdWithDelay(0.5f));
         };
 
@@ -181,7 +182,6 @@ public class GoogleAdsManager : MonoBehaviour
             Debug.LogError($"광고 표시 실패: {error.GetMessage()}");
             isAdLoaded = false;
             OnAdFailedToShow?.Invoke();
-            // 광고 표시 실패 시 즉시 다음 광고 로드
             StartCoroutine(LoadAdWithDelay(0.5f));
         };
     }
@@ -205,7 +205,6 @@ public class GoogleAdsManager : MonoBehaviour
                 Debug.LogError($"광고 표시 예외: {e.Message}");
                 isAdLoaded = false;
                 OnAdFailedToShow?.Invoke();
-                // 광고 표시 실패 시 즉시 다음 광고 로드
                 StartCoroutine(LoadAdWithDelay(0.5f));
             }
         }
@@ -220,6 +219,101 @@ public class GoogleAdsManager : MonoBehaviour
             }
         }
     }
+    #endregion
+
+    #region 배너 광고
+    public void LoadBannerAd()
+    {
+        if (!isInitialized)
+        {
+            Debug.Log("AdMob이 아직 초기화되지 않았습니다.");
+            return;
+        }
+
+        // 기존 배너가 있다면 제거
+        if (bannerView != null)
+        {
+            bannerView.Destroy();
+            bannerView = null;
+        }
+
+        // 배너 광고 생성 (하단 중앙)
+        bannerView = new BannerView(bannerAdUnitId, AdSize.Banner, AdPosition.Bottom);
+
+        // 배너 이벤트 등록
+        RegisterBannerEvents();
+
+        // 배너 광고 요청
+        var adRequest = new AdRequest();
+        bannerView.LoadAd(adRequest);
+
+        Debug.Log("배너 광고 로딩 시작...");
+    }
+
+    private void RegisterBannerEvents()
+    {
+        bannerView.OnBannerAdLoaded += () =>
+        {
+            Debug.Log("배너 광고 로드 성공!");
+            isBannerLoaded = true;
+        };
+
+        bannerView.OnBannerAdLoadFailed += (LoadAdError error) =>
+        {
+            Debug.LogError($"배너 광고 로드 실패: {error.GetMessage()}");
+            isBannerLoaded = false;
+        };
+
+        bannerView.OnAdClicked += () =>
+        {
+            Debug.Log("배너 광고 클릭됨");
+        };
+
+        bannerView.OnAdFullScreenContentOpened += () =>
+        {
+            Debug.Log("배너 광고 전체 화면 열림");
+        };
+
+        bannerView.OnAdFullScreenContentClosed += () =>
+        {
+            Debug.Log("배너 광고 전체 화면 닫힘");
+        };
+    }
+
+    public void ShowBanner()
+    {
+        if (bannerView != null)
+        {
+            bannerView.Show();
+            Debug.Log("배너 광고 표시");
+        }
+    }
+
+    public void HideBanner()
+    {
+        if (bannerView != null)
+        {
+            bannerView.Hide();
+            Debug.Log("배너 광고 숨김");
+        }
+    }
+
+    public void DestroyBanner()
+    {
+        if (bannerView != null)
+        {
+            bannerView.Destroy();
+            bannerView = null;
+            isBannerLoaded = false;
+            Debug.Log("배너 광고 제거");
+        }
+    }
+
+    public bool IsBannerLoaded()
+    {
+        return isBannerLoaded && bannerView != null;
+    }
+    #endregion
 
     public bool IsAdLoaded()
     {
@@ -246,6 +340,11 @@ public class GoogleAdsManager : MonoBehaviour
         if (rewardedAd != null)
         {
             rewardedAd.Destroy();
+        }
+
+        if (bannerView != null)
+        {
+            bannerView.Destroy();
         }
     }
 }

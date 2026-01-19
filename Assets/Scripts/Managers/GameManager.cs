@@ -123,6 +123,10 @@ public class GameManager : MonoBehaviour, INumberProvider
             restoreBtn.onClick.AddListener(RestoreLastAction);
 
         InitGame();
+        if (GoogleAdsManager.Instance != null)
+        {
+            GoogleAdsManager.Instance.LoadBannerAd();
+        }
 
         int challengeNum = GameDataTransfer.GetChallengeNum();
         string highScoreKey;
