@@ -3657,6 +3657,12 @@ MonoBehaviour:
   - {fileID: 21300000, guid: cf8bb789e0dffe342a79cb8edfb34749, type: 3}
   - {fileID: 21300000, guid: 3c0e609fd0e005e4e9d83241e4c1b8f2, type: 3}
   - {fileID: 21300000, guid: d533f5aed76dbc34db17929cb46d970d, type: 3}
+  tutorialSprites_EG:
+  - {fileID: 21300000, guid: c2a48d14a0903f1498e637fcf0f412f5, type: 3}
+  - {fileID: 21300000, guid: b85a2d06887c28e469a18a6ea14583df, type: 3}
+  - {fileID: 21300000, guid: 3926fcbee5dde4e41a0881022659a436, type: 3}
+  - {fileID: 21300000, guid: 9dcbeec2344c8544ba18d03372146bdc, type: 3}
+  - {fileID: 21300000, guid: cd8cca68f03da404dae46e28cf167f7f, type: 3}
   tutorialIndexImages:
   - {fileID: 468632336}
   - {fileID: 308094164}
@@ -3665,6 +3671,8 @@ MonoBehaviour:
   - {fileID: 1692143512}
   activeColor: {r: 1, g: 1, b: 1, a: 1}
   inactiveColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+  overrideLanguageInEditor: 0
+  testLanguage: 10
 --- !u!1001 &714430548
 PrefabInstance:
   m_ObjectHideFlags: 0

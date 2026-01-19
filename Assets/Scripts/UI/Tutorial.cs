@@ -7,20 +7,50 @@ public class Tutorial : MonoBehaviour
     [SerializeField] Button preBtn, nextBtn, exitBtn;
     [SerializeField] Image tutorialImage;
     [SerializeField] Sprite[] tutorialSprites;
+    [SerializeField] Sprite[] tutorialSprites_EG;
     [SerializeField] Image[] tutorialIndexImages;
 
     [Header("Index Indicator Colors")]
     [SerializeField] Color activeColor = Color.white;
     [SerializeField] Color inactiveColor = Color.gray;
 
+    [Header("Test Settings (Editor Only)")]
+    [SerializeField] bool overrideLanguageInEditor = false;
+    [SerializeField] SystemLanguage testLanguage = SystemLanguage.English;
+
     private int currentIndex = 0;
     private const string TUTORIAL_KEY = "HasSeenTutorial";
+    private Sprite[] currentTutorialSprites;
 
     void Awake()
     {
+        // 언어에 따라 사용할 스프라이트 배열 결정
+        currentTutorialSprites = IsKorean() ? tutorialSprites : tutorialSprites_EG;
+
         preBtn.onClick.AddListener(PreBtnOnClick);
         nextBtn.onClick.AddListener(NextBtnOnClick);
         exitBtn.onClick.AddListener(ExitOnClick);
+
+        // 디버그 로그로 현재 언어 확인
+        Debug.Log($"Current Language: {GetCurrentLanguage()}, Using Korean Sprites: {IsKorean()}");
+    }
+
+    // 현재 언어 가져오기 (에디터 테스트용 오버라이드 포함)
+    SystemLanguage GetCurrentLanguage()
+    {
+#if UNITY_EDITOR
+        if (overrideLanguageInEditor)
+        {
+            return testLanguage;
+        }
+#endif
+        return Application.systemLanguage;
+    }
+
+    // 한국어인지 확인하는 메서드
+    bool IsKorean()
+    {
+        return GetCurrentLanguage() == SystemLanguage.Korean;
     }
 
     void Start()
@@ -68,7 +98,7 @@ public class Tutorial : MonoBehaviour
 
     void NextBtnOnClick()
     {
-        if (currentIndex < tutorialSprites.Length - 1)
+        if (currentIndex < currentTutorialSprites.Length - 1)
         {
             currentIndex++;
             UpdateTutorialImage();
@@ -82,9 +112,9 @@ public class Tutorial : MonoBehaviour
 
     void UpdateTutorialImage()
     {
-        if (tutorialSprites != null && tutorialSprites.Length > 0 && tutorialImage != null)
+        if (currentTutorialSprites != null && currentTutorialSprites.Length > 0 && tutorialImage != null)
         {
-            tutorialImage.sprite = tutorialSprites[currentIndex];
+            tutorialImage.sprite = currentTutorialSprites[currentIndex];
         }
     }
 
@@ -97,7 +127,7 @@ public class Tutorial : MonoBehaviour
 
         if (nextBtn != null)
         {
-            nextBtn.interactable = currentIndex < tutorialSprites.Length - 1;
+            nextBtn.interactable = currentIndex < currentTutorialSprites.Length - 1;
         }
     }
 
