@@ -217,9 +217,81 @@ public class LobbyLayoutManager : MonoBehaviour
             {
                 bool isLocked = IsChapterLocked(i);
                 chapters[i].lockPanel.gameObject.SetActive(isLocked);
+
+                // 해상도에 따른 자식 요소 스케일 조정
+                if (isLocked)
+                {
+                    Debug.Log($"[Chapter {i}] Adjusting lock panel children");
+                    AdjustLockPanelChildren(chapters[i].lockPanel);
+                }
             }
         }
     }
+
+    void AdjustLockPanelChildren(RectTransform lockPanel)
+    {
+        // 실제 화면 해상도 사용
+        float screenWidth = Screen.width;
+        float screenHeight = Screen.height;
+
+        Debug.Log($"Screen Resolution: {screenWidth} x {screenHeight}");
+
+        // 화면 비율 계산 (1080x1920 기준)
+        float baseWidth = 1080f;
+        float baseHeight = 1920f;
+        float baseAspect = baseWidth / baseHeight; // 0.5625
+
+        float currentAspect = screenWidth / screenHeight;
+
+        Debug.Log($"Base Aspect: {baseAspect}, Current Aspect: {currentAspect}");
+
+        // 가로가 더 좁으면 (세로가 더 길면) 가로 기준으로 스케일 조정
+        float scaleFactor;
+        if (currentAspect < baseAspect)
+        {
+            // 세로가 더 긴 경우 - 가로 기준으로 더 작게
+            scaleFactor = screenWidth / baseWidth;
+            Debug.Log($"Using width-based scale: {screenWidth} / {baseWidth} = {scaleFactor}");
+        }
+        else
+        {
+            // 가로가 더 넓은 경우 - 높이 기준
+            scaleFactor = screenHeight / baseHeight;
+            Debug.Log($"Using height-based scale: {screenHeight} / {baseHeight} = {scaleFactor}");
+        }
+
+        // LockPanel 크기 대비 조정 (추가 스케일 감소)
+        RectTransform canvasRect = canvas.GetComponent<RectTransform>();
+        float canvasWidth = canvasRect.rect.width;
+        float backgroundSize = canvasWidth - (screenHorizontalMargin * 2);
+
+        // 기준 배경 크기 (1080x1920 기준)
+        float baseBackgroundSize = 1080f - (screenHorizontalMargin * 2);
+        float backgroundScale = backgroundSize / baseBackgroundSize;
+
+        Debug.Log($"Background scale factor: {backgroundScale}");
+
+        // 최종 스케일은 화면 비율과 배경 크기를 모두 고려
+        scaleFactor = scaleFactor * backgroundScale * 0.8f; // 0.8배로 여유 공간 확보
+
+        // 최소/최대 스케일 제한
+        scaleFactor = Mathf.Clamp(scaleFactor, 0.5f, 1.5f);
+
+        Debug.Log($"Final Scale Factor: {scaleFactor}");
+
+        // 모든 자식 요소의 스케일 조정
+        int childCount = 0;
+        foreach (Transform child in lockPanel)
+        {
+            Vector3 oldScale = child.localScale;
+            child.localScale = Vector3.one * scaleFactor;
+            Debug.Log($"Child [{childCount}] '{child.name}': Scale {oldScale} → {child.localScale}");
+            childCount++;
+        }
+
+        Debug.Log($"Total children adjusted: {childCount}");
+    }
+
 
     bool IsChapterLocked(int chapterIndex)
     {

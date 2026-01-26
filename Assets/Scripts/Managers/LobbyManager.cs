@@ -37,6 +37,9 @@ public class LobbyManager : MonoBehaviour
     [SerializeField] float sideScale = 0.7f;
     [SerializeField] Ease scaleEase = Ease.InOutSine;
 
+    [Header("Chapter Set")]
+    [SerializeField] ChapterSet chapterSet;
+
     int chapterNum = 0;
     [SerializeField] GameObject settingPanel;
     [SerializeField] int maxChapterNum = 1;
@@ -69,6 +72,12 @@ public class LobbyManager : MonoBehaviour
         UpdateHighScoreUI(chapterNum);
         UpdateButtonStates();
         UpdateStartButton();
+
+        // ChapterSet 조건 UI 업데이트
+        if (chapterSet != null)
+        {
+            chapterSet.UpdateConditionUI();
+        }
 
         if (layoutManager != null)
         {
@@ -141,10 +150,15 @@ public class LobbyManager : MonoBehaviour
             UpdateButtonStates();
             UpdateStartButton();
 
+            // ChapterSet 조건 UI 업데이트 추가
+            if (chapterSet != null)
+            {
+                chapterSet.UpdateConditionUI();
+            }
+
             if (layoutManager != null)
             {
                 layoutManager.RefreshLockPanels();
-                // Challenge UI는 Chapter 2에서만 표시
                 layoutManager.UpdateChallengeSetVisibility(chapterNum == 2 ? 1 : 0);
             }
 
@@ -164,6 +178,12 @@ public class LobbyManager : MonoBehaviour
             UpdateHighScoreUI(chapterNum);
             UpdateButtonStates();
             UpdateStartButton();
+
+            // ChapterSet 조건 UI 업데이트 추가
+            if (chapterSet != null)
+            {
+                chapterSet.UpdateConditionUI();
+            }
 
             if (layoutManager != null)
             {

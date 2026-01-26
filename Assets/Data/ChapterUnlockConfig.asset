@@ -13,4 +13,4 @@ MonoBehaviour:
   m_Name: ChapterUnlockConfig
   m_EditorClassIdentifier: Assembly-CSharp::ChapterUnlockConfig
   chapter1UnlockScore: 2000
-  chapter2UnlockScore: 7000
+  chapter2UnlockScore: 8000
