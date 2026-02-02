@@ -6,35 +6,14 @@ public class UpdatePopup : MonoBehaviour
 {
     [Header("UI References")]
     [SerializeField] private Button updateButton;
-    [SerializeField] private TextMeshProUGUI titleText;
-    [SerializeField] private TextMeshProUGUI messageText;
-
-    [Header("Messages")]
-    [SerializeField] private string titleMessage = "업데이트 필요";
-    [SerializeField] private string bodyMessage = "새로운 버전이 출시되었습니다.\n게임을 계속하려면 업데이트가 필요합니다.";
-
     private string storeUrl;
 
-    /// <summary>
-    /// 팝업 초기화
-    /// </summary>
-    /// <param name="url">구글 플레이 스토어 URL</param>
+
     public void Initialize(string url)
     {
         storeUrl = url;
 
-        SetupUI();
         SetupButton();
-    }
-
-    private void SetupUI()
-    {
-        // 텍스트 설정
-        if (titleText != null)
-            titleText.text = titleMessage;
-
-        if (messageText != null)
-            messageText.text = bodyMessage;
     }
 
     private void SetupButton()
