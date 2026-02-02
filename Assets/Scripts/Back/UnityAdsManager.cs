@@ -1,9 +1,10 @@
-using System;
 using UnityEngine;
-using UnityEngine.Advertisements;
+using Unity.Services.Core;
+using Unity.Services.LevelPlay;
+using System;
 using System.Collections;
 
-public class UnityAdsManager : MonoBehaviour, IUnityAdsInitializationListener, IUnityAdsLoadListener, IUnityAdsShowListener
+public class UnityAdsManager : MonoBehaviour
 {
     private static UnityAdsManager instance;
     public static UnityAdsManager Instance
@@ -20,30 +21,27 @@ public class UnityAdsManager : MonoBehaviour, IUnityAdsInitializationListener, I
         }
     }
 
-    [Header("Unity Ads Settings")]
-    [SerializeField] private string androidGameId = "YOUR_ANDROID_GAME_ID";
-    [SerializeField] private string iOSGameId = "YOUR_IOS_GAME_ID";
-    [SerializeField] private string androidRewardedAdUnitId = "Rewarded_Android";
-    [SerializeField] private string iOSRewardedAdUnitId = "Rewarded_iOS";
-    [SerializeField] private string androidBannerAdUnitId = "Banner_Android";
-    [SerializeField] private string iOSBannerAdUnitId = "Banner_iOS";
-    [SerializeField] private bool testMode = true; // 출시 시 false로 변경
-    [SerializeField] private BannerPosition bannerPosition = BannerPosition.BOTTOM_CENTER;
+    [Header("LevelPlay Settings")]
+    [SerializeField] private string appKey = "YOUR_APP_KEY"; // LevelPlay App Key
 
-    // Unity 공식 테스트 ID (에디터 테스트용)
-    private const string EDITOR_TEST_GAME_ID = "14851"; // Unity 공식 테스트 Game ID
-    private const string EDITOR_TEST_REWARDED_AD_UNIT_ID = "Rewarded_Android";
-    private const string EDITOR_TEST_BANNER_AD_UNIT_ID = "Banner_Android";
+    [Header("Ad Unit IDs")]
+    [SerializeField] private string androidRewardedAdUnitId = "3qr3vgi9qnx52n2u"; // Rewarded
+    [SerializeField] private string iOSRewardedAdUnitId = "3qr3vgi9qnx52n2u"; // iOS용으로 별도 생성 필요
+    [SerializeField] private string androidBannerAdUnitId = "9ulhleug5p8oljo8"; // Banner
+    [SerializeField] private string iOSBannerAdUnitId = "9ulhleug5p8oljo8"; // iOS용으로 별도 생성 필요
 
-    private string gameId;
     private string rewardedAdUnitId;
     private string bannerAdUnitId;
 
-    private bool isAdLoaded = false;
+    private LevelPlayRewardedAd rewardedAd;
+    private LevelPlayBannerAd bannerAd;
+
     private bool isInitialized = false;
+    private bool isAdLoaded = false;
     private bool isLoadingAd = false;
     private bool isBannerLoaded = false;
 
+    // GoogleAdsManager와 동일한 이벤트
     public event Action OnRewardEarned;
     public event Action OnAdClosed;
     public event Action OnAdFailedToLoad;
@@ -56,24 +54,19 @@ public class UnityAdsManager : MonoBehaviour, IUnityAdsInitializationListener, I
             instance = this;
             DontDestroyOnLoad(gameObject);
 
-            // 플랫폼별 ID 설정
+            // 플랫폼별 Ad Unit ID 설정
 #if UNITY_ANDROID
-            gameId = androidGameId;
             rewardedAdUnitId = androidRewardedAdUnitId;
             bannerAdUnitId = androidBannerAdUnitId;
 #elif UNITY_IOS
-            gameId = iOSGameId;
             rewardedAdUnitId = iOSRewardedAdUnitId;
             bannerAdUnitId = iOSBannerAdUnitId;
 #else
-            // 에디터에서는 Unity 공식 테스트 ID 사용
-            gameId = EDITOR_TEST_GAME_ID;
-            rewardedAdUnitId = EDITOR_TEST_REWARDED_AD_UNIT_ID;
-            bannerAdUnitId = EDITOR_TEST_BANNER_AD_UNIT_ID;
-            Debug.Log("Unity Editor: Using official test IDs for testing");
+            rewardedAdUnitId = androidRewardedAdUnitId;
+            bannerAdUnitId = androidBannerAdUnitId;
 #endif
 
-            InitializeAds();
+            Debug.Log($"[INFO] UnityAdsManager 초기화 - Ad Unit: {rewardedAdUnitId}");
         }
         else if (instance != this)
         {
@@ -81,78 +74,103 @@ public class UnityAdsManager : MonoBehaviour, IUnityAdsInitializationListener, I
         }
     }
 
-    private void OnEnable()
+    private void Start()
     {
-        UnityEngine.SceneManagement.SceneManager.sceneLoaded += OnSceneLoaded;
-    }
-
-    private void OnDisable()
-    {
-        UnityEngine.SceneManagement.SceneManager.sceneLoaded -= OnSceneLoaded;
-    }
-
-    private void OnSceneLoaded(UnityEngine.SceneManagement.Scene scene, UnityEngine.SceneManagement.LoadSceneMode mode)
-    {
-        if (!isAdLoaded && !isLoadingAd && isInitialized)
+        // App Key 검증
+        if (string.IsNullOrEmpty(appKey) || appKey == "YOUR_APP_KEY")
         {
-            StartCoroutine(LoadAdWithDelay(0.5f));
+            Debug.LogError("=== [ERROR] App Key 미입력 ===");
+            Debug.LogError("LevelPlay Dashboard에서 App Key를 확인하고 Inspector에 입력하세요!");
+            Debug.LogError("App Settings → App Key");
+            Debug.LogError("===========================");
+            return;
         }
+
+        StartCoroutine(InitializeLevelPlay());
     }
 
-    private void InitializeAds()
+    private IEnumerator InitializeLevelPlay()
     {
-        try
+        Debug.Log("[INFO] Unity LevelPlay 초기화 시작...");
+
+        var initTask = UnityServices.InitializeAsync();
+
+        // Unity Services 초기화 대기
+        while (!initTask.IsCompleted)
         {
-            if (!Advertisement.isInitialized && Advertisement.isSupported)
-            {
-                Advertisement.Initialize(gameId, testMode, this);
-                Debug.Log("Unity Ads 초기화 시작...");
-            }
-            else if (Advertisement.isInitialized)
-            {
-                isInitialized = true;
-                Debug.Log("Unity Ads 이미 초기화됨");
-                StartCoroutine(LoadAdWithDelay(0.5f));
-            }
+            yield return null;
         }
-        catch (System.Exception e)
+
+        if (initTask.IsFaulted)
         {
-            Debug.LogError($"Unity Ads 초기화 실패: {e.Message}");
+            Debug.LogError($"[ERROR] Unity Services 초기화 실패: {initTask.Exception?.Message}");
+            yield break;
         }
+
+        Debug.Log("[INFO] Unity Services 초기화 완료");
+
+        // LevelPlay 이벤트 등록
+        LevelPlay.OnInitSuccess += OnInitSuccess;
+        LevelPlay.OnInitFailed += OnInitFailed;
+
+        // LevelPlay 초기화
+        LevelPlay.Init(appKey);
     }
 
-    // IUnityAdsInitializationListener 구현
-    public void OnInitializationComplete()
+    private void OnInitSuccess(LevelPlayConfiguration config)
     {
+        Debug.Log($"[SUCCESS] LevelPlay 초기화 완료 (App Key: {appKey})");
         isInitialized = true;
-        Debug.Log("Unity Ads 초기화 완료");
-        StartCoroutine(LoadAdWithDelay(0.5f));
+
+        // 테스트 디바이스 등록용 디바이스 ID 출력
+#if !UNITY_EDITOR
+        string deviceId = SystemInfo.deviceUniqueIdentifier;
+        Debug.Log("=== 테스트 디바이스 등록 정보 ===");
+        Debug.Log($"Device ID: {deviceId}");
+        Debug.Log($"Device Model: {SystemInfo.deviceModel}");
+        Debug.Log($"OS: {SystemInfo.operatingSystem}");
+        Debug.Log("이 Device ID를 LevelPlay Dashboard에 등록하세요!");
+        Debug.Log("===============================");
+#endif
+
+        SetupRewardedAd();
+        SetupBannerAd();
     }
 
-    public void OnInitializationFailed(UnityAdsInitializationError error, string message)
+    private void OnInitFailed(LevelPlayInitError error)
     {
-        Debug.LogError($"Unity Ads 초기화 실패: {error.ToString()} - {message}");
+        Debug.LogError($"[ERROR] LevelPlay 초기화 실패: {error.ErrorMessage}");
         isInitialized = false;
     }
 
-    private IEnumerator LoadAdWithDelay(float delay)
+    #region 보상형 광고
+
+    private void SetupRewardedAd()
     {
-        yield return new WaitForSeconds(delay);
+        rewardedAd = new LevelPlayRewardedAd(rewardedAdUnitId);
+
+        // 이벤트 등록
+        rewardedAd.OnAdLoaded += OnRewardedAdLoaded;
+        rewardedAd.OnAdLoadFailed += OnRewardedAdLoadFailed;
+        rewardedAd.OnAdDisplayed += OnRewardedAdDisplayed;
+        rewardedAd.OnAdDisplayFailed += OnRewardedAdDisplayFailed;
+        rewardedAd.OnAdClosed += OnRewardedAdClosedInternal;
+        rewardedAd.OnAdRewarded += OnRewardedAdRewardedInternal;
+
+        // 첫 광고 로드
         LoadRewardedAd();
     }
 
-    #region 보상형 광고
     public void LoadRewardedAd()
     {
         if (isLoadingAd)
         {
-            Debug.Log("이미 광고를 로딩 중입니다.");
             return;
         }
 
         if (!isInitialized)
         {
-            Debug.Log("Unity Ads가 아직 초기화되지 않았습니다. 3초 후 재시도합니다.");
+            Debug.LogWarning("[WARN] LevelPlay 초기화 대기 중...");
             StartCoroutine(LoadAdWithDelay(3f));
             return;
         }
@@ -162,54 +180,91 @@ public class UnityAdsManager : MonoBehaviour, IUnityAdsInitializationListener, I
 
         try
         {
-            Debug.Log("보상형 광고 로딩 시작...");
-            Advertisement.Load(rewardedAdUnitId, this);
+            Debug.Log("[INFO] 보상형 광고 로딩 중...");
+            rewardedAd?.LoadAd();
         }
-        catch (System.Exception e)
+        catch (Exception e)
         {
             isLoadingAd = false;
-            Debug.LogError($"광고 로드 예외: {e.Message}");
+            Debug.LogError($"[ERROR] 광고 로드 예외: {e.Message}");
             OnAdFailedToLoad?.Invoke();
             StartCoroutine(LoadAdWithDelay(10f));
         }
     }
 
-    // IUnityAdsLoadListener 구현
-    public void OnUnityAdsAdLoaded(string adUnitId)
+    private IEnumerator LoadAdWithDelay(float delay)
     {
-        if (adUnitId.Equals(rewardedAdUnitId))
-        {
-            isLoadingAd = false;
-            isAdLoaded = true;
-            Debug.Log("보상형 광고 로드 성공!");
-        }
+        yield return new WaitForSeconds(delay);
+        LoadRewardedAd();
     }
 
-    public void OnUnityAdsFailedToLoad(string adUnitId, UnityAdsLoadError error, string message)
+    private void OnRewardedAdLoaded(LevelPlayAdInfo adInfo)
     {
-        if (adUnitId.Equals(rewardedAdUnitId))
-        {
-            isLoadingAd = false;
-            isAdLoaded = false;
-            Debug.LogError($"보상형 광고 로드 실패: {error.ToString()} - {message}");
-            OnAdFailedToLoad?.Invoke();
-            StartCoroutine(LoadAdWithDelay(10f));
-        }
+        isLoadingAd = false;
+        isAdLoaded = true;
+        Debug.Log($"[SUCCESS] 보상형 광고 로드 완료 (Ad Unit: {adInfo.AdUnitId})");
+    }
+
+    private void OnRewardedAdLoadFailed(LevelPlayAdError error)
+    {
+        isLoadingAd = false;
+        isAdLoaded = false;
+        Debug.LogError("=== [ERROR] 광고 로드 실패 ===");
+        Debug.LogError($"오류 코드: {error.ErrorCode}");
+        Debug.LogError($"메시지: {error.ErrorMessage}");
+        Debug.LogError($"Ad Unit ID: {rewardedAdUnitId}");
+        Debug.LogError($"App Key: {appKey}");
+        Debug.LogError("=============================");
+
+        OnAdFailedToLoad?.Invoke();
+        StartCoroutine(LoadAdWithDelay(10f));
+    }
+
+    private void OnRewardedAdDisplayed(LevelPlayAdInfo adInfo)
+    {
+        Debug.Log("[INFO] 보상형 광고 표시됨");
+    }
+
+    private void OnRewardedAdDisplayFailed(LevelPlayAdInfo adInfo, LevelPlayAdError error)
+    {
+        Debug.LogError($"[ERROR] 광고 표시 실패: {error.ErrorMessage}");
+        isAdLoaded = false;
+        OnAdFailedToShow?.Invoke();
+        StartCoroutine(LoadAdWithDelay(0.5f));
+    }
+
+    private void OnRewardedAdClosedInternal(LevelPlayAdInfo adInfo)
+    {
+        Debug.Log("[INFO] 광고 닫힘");
+        OnAdClosed?.Invoke();
+        StartCoroutine(LoadAdWithDelay(0.5f));
+    }
+
+    private void OnRewardedAdRewardedInternal(LevelPlayAdInfo adInfo, LevelPlayReward reward)
+    {
+        Debug.Log($"[SUCCESS] 광고 시청 완료 - 보상 지급 ({reward.Amount} {reward.Name})");
+        OnRewardEarned?.Invoke();
     }
 
     public void ShowRewardedAd()
     {
-        if (isAdLoaded && isInitialized)
+        if (!isInitialized)
+        {
+            Debug.LogWarning("[WARN] LevelPlay 초기화되지 않음");
+            OnAdFailedToShow?.Invoke();
+            return;
+        }
+
+        if (rewardedAd != null && isAdLoaded && rewardedAd.IsAdReady())
         {
             try
             {
-                Debug.Log("보상형 광고 표시 시도...");
-                Advertisement.Show(rewardedAdUnitId, this);
+                rewardedAd.ShowAd();
                 isAdLoaded = false;
             }
-            catch (System.Exception e)
+            catch (Exception e)
             {
-                Debug.LogError($"광고 표시 예외: {e.Message}");
+                Debug.LogError($"[ERROR] 광고 표시 예외: {e.Message}");
                 isAdLoaded = false;
                 OnAdFailedToShow?.Invoke();
                 StartCoroutine(LoadAdWithDelay(0.5f));
@@ -217,7 +272,7 @@ public class UnityAdsManager : MonoBehaviour, IUnityAdsInitializationListener, I
         }
         else
         {
-            Debug.Log("광고가 아직 로드되지 않았습니다.");
+            Debug.LogWarning("[WARN] 광고 미로드 - 로드 재시도");
             OnAdFailedToShow?.Invoke();
 
             if (!isLoadingAd)
@@ -227,89 +282,61 @@ public class UnityAdsManager : MonoBehaviour, IUnityAdsInitializationListener, I
         }
     }
 
-    // IUnityAdsShowListener 구현
-    public void OnUnityAdsShowStart(string adUnitId)
-    {
-        if (adUnitId.Equals(rewardedAdUnitId))
-        {
-            Debug.Log("보상형 광고 시작");
-        }
-    }
-
-    public void OnUnityAdsShowClick(string adUnitId)
-    {
-        if (adUnitId.Equals(rewardedAdUnitId))
-        {
-            Debug.Log("보상형 광고 클릭됨");
-        }
-    }
-
-    public void OnUnityAdsShowComplete(string adUnitId, UnityAdsShowCompletionState showCompletionState)
-    {
-        if (adUnitId.Equals(rewardedAdUnitId))
-        {
-            if (showCompletionState.Equals(UnityAdsShowCompletionState.COMPLETED))
-            {
-                Debug.Log("보상형 광고 시청 완료 - 보상 지급");
-                OnRewardEarned?.Invoke();
-            }
-            else
-            {
-                Debug.Log($"보상형 광고 미완료: {showCompletionState}");
-            }
-
-            Debug.Log("광고 닫힘");
-            OnAdClosed?.Invoke();
-            StartCoroutine(LoadAdWithDelay(0.5f));
-        }
-    }
-
-    public void OnUnityAdsShowFailure(string adUnitId, UnityAdsShowError error, string message)
-    {
-        if (adUnitId.Equals(rewardedAdUnitId))
-        {
-            Debug.LogError($"보상형 광고 표시 실패: {error.ToString()} - {message}");
-            isAdLoaded = false;
-            OnAdFailedToShow?.Invoke();
-            StartCoroutine(LoadAdWithDelay(0.5f));
-        }
-    }
     #endregion
 
     #region 배너 광고
+
+    private void SetupBannerAd()
+    {
+        try
+        {
+            // 배너 설정
+            var configBuilder = new LevelPlayBannerAd.Config.Builder()
+                .SetSize(LevelPlayAdSize.BANNER)
+                .SetPosition(LevelPlayBannerPosition.BottomCenter)
+                .SetDisplayOnLoad(false); // 로드 후 자동 표시 안 함
+
+            LevelPlayBannerAd.Config bannerConfig = configBuilder.Build();
+
+            // 배너 생성
+            bannerAd = new LevelPlayBannerAd(bannerAdUnitId, bannerConfig);
+
+            // 이벤트 등록
+            bannerAd.OnAdLoaded += OnBannerAdLoaded;
+            bannerAd.OnAdLoadFailed += OnBannerAdLoadFailed;
+            bannerAd.OnAdDisplayed += OnBannerAdDisplayed;
+            bannerAd.OnAdDisplayFailed += OnBannerAdDisplayFailed;
+
+            Debug.Log($"[INFO] 배너 광고 설정 완료 (Ad Unit: {bannerAdUnitId})");
+        }
+        catch (Exception e)
+        {
+            Debug.LogError($"[ERROR] 배너 설정 실패: {e.Message}");
+        }
+    }
+
     public void LoadBannerAd()
     {
         if (!isInitialized)
         {
-            Debug.Log("Unity Ads가 아직 초기화되지 않았습니다. 배너 로드 대기 중...");
+            Debug.LogWarning("[WARN] LevelPlay 초기화 대기 중...");
             StartCoroutine(LoadBannerAfterInit());
             return;
         }
 
         try
         {
-            // 배너 위치 설정
-            Advertisement.Banner.SetPosition(bannerPosition);
-
-            // 배너 로드 옵션 설정
-            BannerLoadOptions options = new BannerLoadOptions
-            {
-                loadCallback = OnBannerLoaded,
-                errorCallback = OnBannerError
-            };
-
-            Debug.Log($"배너 광고 로딩 시작... (Ad Unit: {bannerAdUnitId}, Position: {bannerPosition})");
-            Advertisement.Banner.Load(bannerAdUnitId, options);
+            Debug.Log("[INFO] 배너 광고 로딩 중...");
+            bannerAd?.LoadAd();
         }
-        catch (System.Exception e)
+        catch (Exception e)
         {
-            Debug.LogError($"배너 광고 로드 예외: {e.Message}");
+            Debug.LogError($"[ERROR] 배너 로드 예외: {e.Message}");
         }
     }
 
     private IEnumerator LoadBannerAfterInit()
     {
-        // 초기화 완료 대기 (최대 10초)
         float waitTime = 0f;
         while (!isInitialized && waitTime < 10f)
         {
@@ -319,74 +346,65 @@ public class UnityAdsManager : MonoBehaviour, IUnityAdsInitializationListener, I
 
         if (isInitialized)
         {
-            Debug.Log("Unity Ads 초기화 완료 - 배너 로드 시작");
             LoadBannerAd();
         }
         else
         {
-            Debug.LogError("Unity Ads 초기화 타임아웃 - 배너 로드 실패");
+            Debug.LogError("[ERROR] LevelPlay 초기화 타임아웃 - 배너 로드 실패");
         }
     }
 
-    private void OnBannerLoaded()
+    private void OnBannerAdLoaded(LevelPlayAdInfo adInfo)
     {
-        Debug.Log("배너 광고 로드 성공!");
+        Debug.Log($"[SUCCESS] 배너 광고 로드 완료 (Ad Unit: {adInfo.AdUnitId})");
         isBannerLoaded = true;
     }
 
-    private void OnBannerError(string message)
+    private void OnBannerAdLoadFailed(LevelPlayAdError error)
     {
-        Debug.LogError($"배너 광고 로드 실패: {message}");
+        Debug.LogError($"[ERROR] 배너 로드 실패: {error.ErrorMessage}");
         isBannerLoaded = false;
+    }
+
+    private void OnBannerAdDisplayed(LevelPlayAdInfo adInfo)
+    {
+        Debug.Log("[INFO] 배너 광고 표시됨");
+    }
+
+    private void OnBannerAdDisplayFailed(LevelPlayAdInfo adInfo, LevelPlayAdError error)
+    {
+        Debug.LogError($"[ERROR] 배너 표시 실패: {error.ErrorMessage}");
     }
 
     public void ShowBanner()
     {
+        if (!isInitialized)
+        {
+            Debug.LogWarning("[WARN] LevelPlay 초기화되지 않음");
+            return;
+        }
+
         if (isBannerLoaded)
         {
-            BannerOptions options = new BannerOptions
-            {
-                clickCallback = OnBannerClicked,
-                hideCallback = OnBannerHidden,
-                showCallback = OnBannerShown
-            };
-
-            Advertisement.Banner.Show(bannerAdUnitId, options);
-            Debug.Log("배너 광고 표시");
+            // 이미 로드되어 있으면 표시만
+            bannerAd?.ShowAd();
         }
         else
         {
-            Debug.Log("배너가 로드되지 않았습니다. 로드를 시도합니다.");
-            LoadBannerAd();
+            // 로드되어 있지 않으면 로드 (자동 표시 안 됨)
+            bannerAd?.LoadAd();
         }
     }
 
     public void HideBanner()
     {
-        Advertisement.Banner.Hide();
-        Debug.Log("배너 광고 숨김");
+        bannerAd?.HideAd();
     }
 
     public void DestroyBanner()
     {
-        Advertisement.Banner.Hide();
+        bannerAd?.DestroyAd();
         isBannerLoaded = false;
-        Debug.Log("배너 광고 제거");
-    }
-
-    private void OnBannerClicked()
-    {
-        Debug.Log("배너 광고 클릭됨");
-    }
-
-    private void OnBannerShown()
-    {
-        Debug.Log("배너 광고 표시됨");
-    }
-
-    private void OnBannerHidden()
-    {
-        Debug.Log("배너 광고 숨겨짐");
     }
 
     public bool IsBannerLoaded()
@@ -394,17 +412,13 @@ public class UnityAdsManager : MonoBehaviour, IUnityAdsInitializationListener, I
         return isBannerLoaded;
     }
 
-    public void SetBannerPosition(BannerPosition position)
-    {
-        bannerPosition = position;
-        Advertisement.Banner.SetPosition(position);
-        Debug.Log($"배너 위치 변경: {position}");
-    }
     #endregion
+
+    #region GoogleAdsManager 호환 메서드
 
     public bool IsAdLoaded()
     {
-        return isAdLoaded;
+        return isAdLoaded && rewardedAd != null && rewardedAd.IsAdReady();
     }
 
     public bool IsLoadingAd()
@@ -412,29 +426,50 @@ public class UnityAdsManager : MonoBehaviour, IUnityAdsInitializationListener, I
         return isLoadingAd;
     }
 
-    public string GetAdUnitId()
-    {
-        return rewardedAdUnitId;
-    }
-
     public bool IsInitialized()
     {
         return isInitialized;
     }
 
-    public string GetGameId()
+    public string GetAdUnitId()
     {
-        return gameId;
+        return rewardedAdUnitId;
     }
 
-    public bool IsTestMode()
+    public string GetAppKey()
     {
-        return testMode;
+        return appKey;
     }
+
+    #endregion
 
     private void OnDestroy()
     {
-        // Unity Ads는 자동으로 정리되므로 별도 처리 불필요
-        Debug.Log("UnityAdsManager 제거됨");
+        // LevelPlay 이벤트 해제
+        LevelPlay.OnInitSuccess -= OnInitSuccess;
+        LevelPlay.OnInitFailed -= OnInitFailed;
+
+        // Rewarded Ad 이벤트 해제
+        if (rewardedAd != null)
+        {
+            rewardedAd.OnAdLoaded -= OnRewardedAdLoaded;
+            rewardedAd.OnAdLoadFailed -= OnRewardedAdLoadFailed;
+            rewardedAd.OnAdDisplayed -= OnRewardedAdDisplayed;
+            rewardedAd.OnAdDisplayFailed -= OnRewardedAdDisplayFailed;
+            rewardedAd.OnAdClosed -= OnRewardedAdClosedInternal;
+            rewardedAd.OnAdRewarded -= OnRewardedAdRewardedInternal;
+        }
+
+        // Banner Ad 이벤트 해제
+        if (bannerAd != null)
+        {
+            bannerAd.OnAdLoaded -= OnBannerAdLoaded;
+            bannerAd.OnAdLoadFailed -= OnBannerAdLoadFailed;
+            bannerAd.OnAdDisplayed -= OnBannerAdDisplayed;
+            bannerAd.OnAdDisplayFailed -= OnBannerAdDisplayFailed;
+            bannerAd.DestroyAd();
+        }
+
+        Debug.Log("[INFO] UnityAdsManager 제거됨");
     }
 }
