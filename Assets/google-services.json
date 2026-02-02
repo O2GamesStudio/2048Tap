@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "63216928156",
+    "project_id": "tap-a7aa2",
+    "storage_bucket": "tap-a7aa2.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:63216928156:android:389e2387caaa2f6a37f459",
+        "android_client_info": {
+          "package_name": "com.o2studio.tap2048"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD46G7KGyZrSjn2wXZDHV9NwiVImokHPCM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
