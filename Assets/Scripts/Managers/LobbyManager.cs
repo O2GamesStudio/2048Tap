@@ -73,7 +73,6 @@ public class LobbyManager : MonoBehaviour
         UpdateButtonStates();
         UpdateStartButton();
 
-        // ChapterSet 조건 UI 업데이트
         if (chapterSet != null)
         {
             chapterSet.UpdateConditionUI();

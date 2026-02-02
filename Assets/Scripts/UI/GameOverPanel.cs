@@ -17,18 +17,22 @@ public class GameOverPanel : MonoBehaviour
 
     void OnEnable()
     {
-        // 이벤트 구독
-        GoogleAdsManager.Instance.OnAdClosed += OnAdClosedHandler;
-        GoogleAdsManager.Instance.OnAdFailedToShow += OnAdFailedHandler;
+        // UnityAdsManager null 체크
+        if (UnityAdsManager.Instance != null)
+        {
+            // 이벤트 구독
+            UnityAdsManager.Instance.OnAdClosed += OnAdClosedHandler;
+            UnityAdsManager.Instance.OnAdFailedToShow += OnAdFailedHandler;
+        }
     }
 
     void OnDisable()
     {
         // 이벤트 구독 해제
-        if (GoogleAdsManager.Instance != null)
+        if (UnityAdsManager.Instance != null)
         {
-            GoogleAdsManager.Instance.OnAdClosed -= OnAdClosedHandler;
-            GoogleAdsManager.Instance.OnAdFailedToShow -= OnAdFailedHandler;
+            UnityAdsManager.Instance.OnAdClosed -= OnAdClosedHandler;
+            UnityAdsManager.Instance.OnAdFailedToShow -= OnAdFailedHandler;
         }
     }
 
@@ -43,13 +47,14 @@ public class GameOverPanel : MonoBehaviour
 
     void RetryOnClick()
     {
-        // 광고가 로드되어 있으면 광고 표시
-        if (GoogleAdsManager.Instance.IsAdLoaded())
+        // UnityAdsManager가 있고 광고가 로드되어 있으면 광고 표시
+        if (UnityAdsManager.Instance != null && UnityAdsManager.Instance.IsAdLoaded())
         {
-            GoogleAdsManager.Instance.ShowRewardedAd();
+            UnityAdsManager.Instance.ShowRewardedAd();
         }
         else
         {
+            // 광고가 없으면 바로 재시작
             RestartScene();
         }
     }

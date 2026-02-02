@@ -123,9 +123,13 @@ public class GameManager : MonoBehaviour, INumberProvider
             restoreBtn.onClick.AddListener(RestoreLastAction);
 
         InitGame();
-        if (GoogleAdsManager.Instance != null)
+
+        // Unity Ads 배너 로드 및 표시
+        if (UnityAdsManager.Instance != null)
         {
-            GoogleAdsManager.Instance.LoadBannerAd();
+            UnityAdsManager.Instance.LoadBannerAd();
+            // 배너 로드 후 자동으로 표시
+            StartCoroutine(ShowBannerAfterLoad());
         }
 
         int challengeNum = GameDataTransfer.GetChallengeNum();
@@ -145,9 +149,10 @@ public class GameManager : MonoBehaviour, INumberProvider
 
         UpdateItemButtons();
 
-        if (!GoogleAdsManager.Instance.IsAdLoaded() && !GoogleAdsManager.Instance.IsLoadingAd())
+        // Unity Ads 보상형 광고 로드
+        if (UnityAdsManager.Instance != null && !UnityAdsManager.Instance.IsAdLoaded() && !UnityAdsManager.Instance.IsLoadingAd())
         {
-            GoogleAdsManager.Instance.LoadRewardedAd();
+            UnityAdsManager.Instance.LoadRewardedAd();
         }
     }
 
@@ -429,18 +434,18 @@ public class GameManager : MonoBehaviour, INumberProvider
             return;
         }
 
-        if (GoogleAdsManager.Instance.IsAdLoaded())
+        if (UnityAdsManager.Instance.IsAdLoaded())
         {
-            GoogleAdsManager.Instance.OnRewardEarned += OnEraseAdRewardEarned;
-            GoogleAdsManager.Instance.OnAdClosed += OnEraseAdClosed;
-            GoogleAdsManager.Instance.OnAdFailedToShow += OnEraseAdFailed;
+            UnityAdsManager.Instance.OnRewardEarned += OnEraseAdRewardEarned;
+            UnityAdsManager.Instance.OnAdClosed += OnEraseAdClosed;
+            UnityAdsManager.Instance.OnAdFailedToShow += OnEraseAdFailed;
 
-            GoogleAdsManager.Instance.ShowRewardedAd();
+            UnityAdsManager.Instance.ShowRewardedAd();
         }
         else
         {
             Debug.Log("광고를 로딩 중입니다. 잠시 후 다시 시도해주세요.");
-            GoogleAdsManager.Instance.LoadRewardedAd();
+            UnityAdsManager.Instance.LoadRewardedAd();
         }
     }
 
@@ -451,25 +456,25 @@ public class GameManager : MonoBehaviour, INumberProvider
         UpdateItemButtons();
 
         // 이벤트 구독 해제
-        GoogleAdsManager.Instance.OnRewardEarned -= OnEraseAdRewardEarned;
-        GoogleAdsManager.Instance.OnAdClosed -= OnEraseAdClosed;
-        GoogleAdsManager.Instance.OnAdFailedToShow -= OnEraseAdFailed;
+        UnityAdsManager.Instance.OnRewardEarned -= OnEraseAdRewardEarned;
+        UnityAdsManager.Instance.OnAdClosed -= OnEraseAdClosed;
+        UnityAdsManager.Instance.OnAdFailedToShow -= OnEraseAdFailed;
     }
 
     void OnEraseAdClosed()
     {
         // 이벤트 구독 해제
-        GoogleAdsManager.Instance.OnAdClosed -= OnEraseAdClosed;
-        GoogleAdsManager.Instance.OnRewardEarned -= OnEraseAdRewardEarned;
-        GoogleAdsManager.Instance.OnAdFailedToShow -= OnEraseAdFailed;
+        UnityAdsManager.Instance.OnAdClosed -= OnEraseAdClosed;
+        UnityAdsManager.Instance.OnRewardEarned -= OnEraseAdRewardEarned;
+        UnityAdsManager.Instance.OnAdFailedToShow -= OnEraseAdFailed;
     }
 
     void OnEraseAdFailed()
     {
         // 이벤트 구독 해제
-        GoogleAdsManager.Instance.OnRewardEarned -= OnEraseAdRewardEarned;
-        GoogleAdsManager.Instance.OnAdClosed -= OnEraseAdClosed;
-        GoogleAdsManager.Instance.OnAdFailedToShow -= OnEraseAdFailed;
+        UnityAdsManager.Instance.OnRewardEarned -= OnEraseAdRewardEarned;
+        UnityAdsManager.Instance.OnAdClosed -= OnEraseAdClosed;
+        UnityAdsManager.Instance.OnAdFailedToShow -= OnEraseAdFailed;
     }
 
     float GetTileCountBonus(int tileCount)
@@ -645,18 +650,18 @@ public class GameManager : MonoBehaviour, INumberProvider
             return;
         }
 
-        if (GoogleAdsManager.Instance.IsAdLoaded())
+        if (UnityAdsManager.Instance.IsAdLoaded())
         {
-            GoogleAdsManager.Instance.OnRewardEarned += OnRestoreAdRewardEarned;
-            GoogleAdsManager.Instance.OnAdClosed += OnRestoreAdClosed;
-            GoogleAdsManager.Instance.OnAdFailedToShow += OnRestoreAdFailed;
+            UnityAdsManager.Instance.OnRewardEarned += OnRestoreAdRewardEarned;
+            UnityAdsManager.Instance.OnAdClosed += OnRestoreAdClosed;
+            UnityAdsManager.Instance.OnAdFailedToShow += OnRestoreAdFailed;
 
-            GoogleAdsManager.Instance.ShowRewardedAd();
+            UnityAdsManager.Instance.ShowRewardedAd();
         }
         else
         {
             Debug.Log("광고를 로딩 중입니다. 잠시 후 다시 시도해주세요.");
-            GoogleAdsManager.Instance.LoadRewardedAd();
+            UnityAdsManager.Instance.LoadRewardedAd();
         }
     }
 
@@ -667,25 +672,25 @@ public class GameManager : MonoBehaviour, INumberProvider
         UpdateItemButtons();
 
         // 이벤트 구독 해제
-        GoogleAdsManager.Instance.OnRewardEarned -= OnRestoreAdRewardEarned;
-        GoogleAdsManager.Instance.OnAdClosed -= OnRestoreAdClosed;
-        GoogleAdsManager.Instance.OnAdFailedToShow -= OnRestoreAdFailed;
+        UnityAdsManager.Instance.OnRewardEarned -= OnRestoreAdRewardEarned;
+        UnityAdsManager.Instance.OnAdClosed -= OnRestoreAdClosed;
+        UnityAdsManager.Instance.OnAdFailedToShow -= OnRestoreAdFailed;
     }
 
     void OnRestoreAdClosed()
     {
         // 이벤트 구독 해제
-        GoogleAdsManager.Instance.OnAdClosed -= OnRestoreAdClosed;
-        GoogleAdsManager.Instance.OnRewardEarned -= OnRestoreAdRewardEarned;
-        GoogleAdsManager.Instance.OnAdFailedToShow -= OnRestoreAdFailed;
+        UnityAdsManager.Instance.OnAdClosed -= OnRestoreAdClosed;
+        UnityAdsManager.Instance.OnRewardEarned -= OnRestoreAdRewardEarned;
+        UnityAdsManager.Instance.OnAdFailedToShow -= OnRestoreAdFailed;
     }
 
     void OnRestoreAdFailed()
     {
         // 이벤트 구독 해제
-        GoogleAdsManager.Instance.OnRewardEarned -= OnRestoreAdRewardEarned;
-        GoogleAdsManager.Instance.OnAdClosed -= OnRestoreAdClosed;
-        GoogleAdsManager.Instance.OnAdFailedToShow -= OnRestoreAdFailed;
+        UnityAdsManager.Instance.OnRewardEarned -= OnRestoreAdRewardEarned;
+        UnityAdsManager.Instance.OnAdClosed -= OnRestoreAdClosed;
+        UnityAdsManager.Instance.OnAdFailedToShow -= OnRestoreAdFailed;
     }
 
     void UpdateItemButtons()
@@ -913,6 +918,28 @@ public class GameManager : MonoBehaviour, INumberProvider
             case 128: return 7;
             case 256: return 8;
             default: return 0;
+        }
+    }
+
+    IEnumerator ShowBannerAfterLoad()
+    {
+        // 배너가 로드될 때까지 대기 (최대 5초)
+        float waitTime = 0f;
+        while (!UnityAdsManager.Instance.IsBannerLoaded() && waitTime < 5f)
+        {
+            yield return new WaitForSeconds(0.5f);
+            waitTime += 0.5f;
+        }
+
+        // 배너 표시
+        if (UnityAdsManager.Instance.IsBannerLoaded())
+        {
+            UnityAdsManager.Instance.ShowBanner();
+            Debug.Log("배너 광고 표시 성공");
+        }
+        else
+        {
+            Debug.LogWarning("배너 광고 로드 실패 - 타임아웃");
         }
     }
 }

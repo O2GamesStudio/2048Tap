@@ -65,7 +65,6 @@ public class LobbyLayoutManager : MonoBehaviour
             challengeSet.gameObject.SetActive(false);
         }
     }
-
     void SetupAnchors()
     {
         foreach (var chapter in chapters)

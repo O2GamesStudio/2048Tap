@@ -4964,7 +4964,7 @@ GameObject:
   - component: {fileID: 1260750057}
   - component: {fileID: 1260750058}
   m_Layer: 0
-  m_Name: GoogleAdsManager
+  m_Name: UnityAdsManager
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -4994,9 +4994,17 @@ MonoBehaviour:
   m_GameObject: {fileID: 1260750056}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5a44665d53157b142a8d011a3eb12c1d, type: 3}
+  m_Script: {fileID: 11500000, guid: 865dc277e2213924f83df4e6f2223ab9, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::GoogleAdsManager
+  m_EditorClassIdentifier: Assembly-CSharp::UnityAdsManager
+  androidGameId: 6037816
+  iOSGameId: 6037817
+  androidRewardedAdUnitId: Rewarded_Android
+  iOSRewardedAdUnitId: Rewarded_iOS
+  androidBannerAdUnitId: Banner_Android
+  iOSBannerAdUnitId: Banner_iOS
+  testMode: 1
+  bannerPosition: 4
 --- !u!114 &1277505942 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 6602290698174561637, guid: 0a99015a656a84c4783e583587a403db, type: 3}
