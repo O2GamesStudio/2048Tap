@@ -124,11 +124,9 @@ public class GameManager : MonoBehaviour, INumberProvider
 
         InitGame();
 
-        // Unity Ads 배너 로드 및 표시
         if (UnityAdsManager.Instance != null)
         {
             UnityAdsManager.Instance.LoadBannerAd();
-            // 배너 로드 후 자동으로 표시
             StartCoroutine(ShowBannerAfterLoad());
         }
 
@@ -149,7 +147,6 @@ public class GameManager : MonoBehaviour, INumberProvider
 
         UpdateItemButtons();
 
-        // Unity Ads 보상형 광고 로드
         if (UnityAdsManager.Instance != null && !UnityAdsManager.Instance.IsAdLoaded() && !UnityAdsManager.Instance.IsLoadingAd())
         {
             UnityAdsManager.Instance.LoadRewardedAd();
@@ -165,7 +162,7 @@ public class GameManager : MonoBehaviour, INumberProvider
 
         for (int a = 0; a < totalCells; a++)
         {
-            numBtns[a].UnlockButton(); // 모든 버튼 잠금 해제
+            numBtns[a].UnlockButton();
             numBtns[a].SetNumText(0);
             visited[a] = false;
             isFilled[a] = false;
@@ -188,7 +185,6 @@ public class GameManager : MonoBehaviour, INumberProvider
 
                 if (attempts > maxAttempts)
                 {
-                    Debug.LogWarning("초기 배치 시도 횟수 초과. 기본 배치로 전환합니다.");
                     for (int i = 0; i < totalCells; i++)
                     {
                         if (numSet[i] == 0 && !numBtns[i].IsLocked())
@@ -215,8 +211,6 @@ public class GameManager : MonoBehaviour, INumberProvider
             numBtns[i].GetComponentInChildren<Button>().onClick.AddListener(() => BtnOnClicked(index));
         }
         uiManager.UpdateUI();
-
-        // Challenge 모드: challengeNum에 따라 버튼 잠금
         LockButtonsForChallenge();
     }
 
@@ -224,9 +218,8 @@ public class GameManager : MonoBehaviour, INumberProvider
     {
         int challengeNum = GameDataTransfer.GetChallengeNum();
 
-        if (challengeNum <= 0) return; // 일반 모드면 리턴
+        if (challengeNum <= 0) return;
 
-        Debug.Log($"Locking {challengeNum} buttons for challenge mode");
 
         List<int> availableIndices = new List<int>();
         for (int i = 0; i < totalCells; i++)
@@ -243,7 +236,6 @@ public class GameManager : MonoBehaviour, INumberProvider
             numSet[buttonIndex] = -1;
 
             availableIndices.RemoveAt(randomIndex);
-            Debug.Log($"Locked button at index: {buttonIndex}");
         }
     }
 
@@ -455,7 +447,6 @@ public class GameManager : MonoBehaviour, INumberProvider
         eraseAdWatchCount++;
         UpdateItemButtons();
 
-        // 이벤트 구독 해제
         UnityAdsManager.Instance.OnRewardEarned -= OnEraseAdRewardEarned;
         UnityAdsManager.Instance.OnAdClosed -= OnEraseAdClosed;
         UnityAdsManager.Instance.OnAdFailedToShow -= OnEraseAdFailed;
@@ -463,7 +454,6 @@ public class GameManager : MonoBehaviour, INumberProvider
 
     void OnEraseAdClosed()
     {
-        // 이벤트 구독 해제
         UnityAdsManager.Instance.OnAdClosed -= OnEraseAdClosed;
         UnityAdsManager.Instance.OnRewardEarned -= OnEraseAdRewardEarned;
         UnityAdsManager.Instance.OnAdFailedToShow -= OnEraseAdFailed;
@@ -471,7 +461,6 @@ public class GameManager : MonoBehaviour, INumberProvider
 
     void OnEraseAdFailed()
     {
-        // 이벤트 구독 해제
         UnityAdsManager.Instance.OnRewardEarned -= OnEraseAdRewardEarned;
         UnityAdsManager.Instance.OnAdClosed -= OnEraseAdClosed;
         UnityAdsManager.Instance.OnAdFailedToShow -= OnEraseAdFailed;
@@ -511,7 +500,6 @@ public class GameManager : MonoBehaviour, INumberProvider
     {
         if (isAnimating) return;
 
-        // 잠긴 버튼은 클릭 불가
         if (numBtns[index].IsLocked() || numSet[index] == -1)
         {
             Debug.Log($"Button {index} is locked and cannot be clicked");

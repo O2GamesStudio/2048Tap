@@ -38,7 +38,6 @@ public class ForceUpdateManager : MonoBehaviour
             else
             {
                 Debug.LogWarning($"Firebase 초기화 실패: {task.Result}. 버전 체크 없이 게임 계속 진행");
-                // Firebase 실패해도 게임은 계속 진행
                 OnVersionCheckCompleted?.Invoke();
             }
         });
@@ -50,7 +49,7 @@ public class ForceUpdateManager : MonoBehaviour
         Dictionary<string, object> defaults = new Dictionary<string, object>
         {
             { KEY_LATEST_VERSION, "1.0.0" },
-            { KEY_UPDATE_URL, "https://play.google.com/store/apps/details?id=com.yourcompany.yourgame" }
+            { KEY_UPDATE_URL, "https://play.google.com/store/apps/details?id=com.o2studio.tap2048" }
         };
 
         FirebaseRemoteConfig.DefaultInstance.SetDefaultsAsync(defaults)
@@ -99,26 +98,13 @@ public class ForceUpdateManager : MonoBehaviour
         // 버전 비교
         if (CompareVersion(currentVersion, latestVersion) < 0)
         {
-            // 현재 버전이 최신 버전보다 낮음 - 업데이트 필요
-            Debug.Log("업데이트 필요! 팝업 표시");
             ShowUpdatePopup(updateUrl);
         }
         else
         {
-            // 최신 버전 - 게임 계속 진행
-            Debug.Log("최신 버전입니다. 게임 시작!");
             OnVersionCheckCompleted?.Invoke();
         }
     }
-
-    /// <summary>
-    /// 버전 문자열 비교 (예: "1.0.5"와 "1.0.3" 비교)
-    /// </summary>
-    /// <returns>
-    /// -1: version1이 version2보다 낮음
-    ///  0: 같음
-    ///  1: version1이 version2보다 높음
-    /// </returns>
     private int CompareVersion(string version1, string version2)
     {
         try
@@ -141,8 +127,7 @@ public class ForceUpdateManager : MonoBehaviour
         }
         catch (Exception e)
         {
-            Debug.LogError($"버전 비교 중 오류: {e.Message}");
-            return 0; // 오류 시 같은 것으로 처리
+            return 0;
         }
     }
 
@@ -155,17 +140,20 @@ public class ForceUpdateManager : MonoBehaviour
             return;
         }
 
-        updatePopup.SetActive(true);
-
         UpdatePopup popup = updatePopup.GetComponent<UpdatePopup>();
         if (popup != null)
         {
+            // 활성화 전에 Initialize 호출
             popup.Initialize(updateUrl);
         }
         else
         {
             Debug.LogError("UpdatePopup 컴포넌트를 찾을 수 없습니다!");
             OnVersionCheckCompleted?.Invoke();
+            return;
         }
+
+        // Initialize 후에 활성화
+        updatePopup.SetActive(true);
     }
 }

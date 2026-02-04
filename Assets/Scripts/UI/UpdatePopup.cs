@@ -6,13 +6,16 @@ public class UpdatePopup : MonoBehaviour
 {
     [Header("UI References")]
     [SerializeField] private Button updateButton;
-    private string storeUrl;
+    private string storeUrl = "https://play.google.com/store/apps/details?id=com.o2studio.tap2048";
 
-
+    private void Awake()
+    {
+        SetupButton();
+    }
     public void Initialize(string url)
     {
+        Debug.Log("초기화 호출됨");
         storeUrl = url;
-
         SetupButton();
     }
 
@@ -22,29 +25,20 @@ public class UpdatePopup : MonoBehaviour
         {
             updateButton.onClick.RemoveAllListeners();
             updateButton.onClick.AddListener(OnUpdateButtonClicked);
-        }
-        else
-        {
-            Debug.LogError("Update Button이 할당되지 않았습니다!");
+            Debug.Log("리스너 달림");
         }
     }
 
     private void OnUpdateButtonClicked()
     {
-        Debug.Log($"스토어로 이동: {storeUrl}");
-
-        // 효과음 재생 (SoundManager가 있다면)
         if (SoundManager.Instance != null)
         {
             SoundManager.Instance.PlayUIBtnClickSFX();
         }
 
-        // 구글 플레이 스토어로 이동
         Application.OpenURL(storeUrl);
 
         // 앱 종료 (강제 업데이트이므로)
-        Debug.Log("업데이트 버튼 클릭 - 앱 종료");
-
 #if UNITY_EDITOR
         UnityEditor.EditorApplication.isPlaying = false;
 #else
@@ -56,6 +50,8 @@ public class UpdatePopup : MonoBehaviour
     {
         // 버튼 리스너 정리
         if (updateButton != null)
+        {
             updateButton.onClick.RemoveAllListeners();
+        }
     }
 }
